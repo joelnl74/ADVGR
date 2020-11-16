@@ -1,0 +1,14 @@
+.vs/
+apps/ai_demo/x64/*
+apps/app_matui/*
+apps/imguiapp/*
+*.exe
+*.ilk
+*.pdb
+*.bin
+*.log
+*.tlog
+*.idb
+*.ptx
+x64/
+coredlls/
