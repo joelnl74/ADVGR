@@ -32,9 +32,9 @@ void RenderCore::Init()
 	sphere->m_color = make_float3(0, 255, 0);
 
 	Triangle* triangle = new Triangle();
-	triangle->point1 = make_float3(1.0, 0.5, 1);
-	triangle->point2 = make_float3(1, 0, 1);
-	triangle->point3 = make_float3(1.5, 0, 1);
+	triangle->point1 = make_float3(0.3, 0.1, 1);
+	triangle->point2 = make_float3(0.3, 0, 1);
+	triangle->point3 = make_float3(0.4, 0, 1);
 	triangle->m_color = make_float3(255, 0, 0);
 
 	m_Primitives.push_back(sphere);
@@ -79,23 +79,22 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	Ray ray;
-	float3 lower_left = make_float3(-2.0, -1.0, -1.0);
-	float3 horizontal = make_float3(4.0, 0.0, 0.0);
-	float3 vertical = make_float3(0.0, 2.0, 0.0);
-	float3 origin = make_float3(0, 0, 0);
+
+	float dx = 1.0f / (SCRWIDTH - 1);
+	float dy = 1.0f / (SCRHEIGHT - 1);
 
 	// render
 	for (int y = 0; y < SCRHEIGHT; y++)
 	{
 		for (int x = 0; x < SCRWIDTH; x++)
 		{
-			float u = (float)x / (float)SCRWIDTH;
-			float v = (float)y / (float)SCRHEIGHT;
-
-			float3 direction = lower_left + u * horizontal + v * vertical;
+			float3 sx = x * dx * (view.p2 - view.p1); // screen width
+			float3 sy = y * dy * (view.p3 - view.p1); // screen height
+			float3 point = view.p1 + sx + sy;         // point on the screen
+			float3 direction = normalize(point - view.pos); // direction
 
 			ray.t = INT_MAX;
-			ray.m_Origin = origin;
+			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
 
 			screenData[x + y * SCRWIDTH] = Trace(ray);
