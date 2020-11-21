@@ -46,6 +46,7 @@ public:
 	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles );
 	void Render( const ViewPyramid& view, const Convergence converge, bool async );
 	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
+	void SetMaterials(CoreMaterial* mat, const int materialCount);
 	CoreStats GetCoreStats() const override;
 	void Shutdown();
 	float3 Trace(Ray ray);
@@ -54,7 +55,6 @@ public:
 	inline void SetProbePos( const int2 pos ) override {}
 	inline void Setting( const char* name, float value ) override {}
 	inline void SetTextures( const CoreTexDesc* tex, const int textureCount ) override {}
-	inline void SetMaterials( CoreMaterial* mat, const int materialCount ) override {}
 	inline void SetLights( const CoreLightTri* triLights, const int triLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
@@ -78,6 +78,7 @@ public:
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 
 	vector<Primitive*> m_Primitives;
+	map<int, float3> materials;
 };
 
 } // namespace lh2core

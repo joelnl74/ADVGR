@@ -39,7 +39,8 @@ public:
 
         // compute t
         float tt = f * dot(edge2, q);
-        if (tt > EPSILON && tt < 1 / EPSILON) { // ray intersection
+        // ray intersection
+        if (tt > EPSILON && tt < 1 / EPSILON) {
             return tt;
         }
 

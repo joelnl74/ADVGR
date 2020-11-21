@@ -66,8 +66,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 {
 	Ray ray;
 
-	float dx = 2.0f / (SCRWIDTH - 1);
-	float dy = 2.0f / (SCRHEIGHT - 1);
+	float dx = 1.0f / (SCRWIDTH - 1);
+	float dy = 1.0f / (SCRHEIGHT - 1);
 
 	// render
 	for (int y = 0; y < SCRHEIGHT; y++)
@@ -113,10 +113,10 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 	CoreTri* tri;
 
 	float t_min = numeric_limits<float>::max();
+
 	for (Mesh& mesh : meshes) {
 		for (int i = 0; i < mesh.vcount / 3; i++) {
 			auto t = Utils::IntersectTriangle(ray, mesh.triangles[i]);
-
 			if (t < t_min) {
 				t_min = t;
 				tri = &mesh.triangles[i];
@@ -129,8 +129,22 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 		return make_float3(0, 0, 0);
 	}
 
-	return make_float3(255, 0, 0);
+	return materials[tri->material];
+}
 
+void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
+{
+	if (materialCount == materials.size())
+	{
+		return;
+	}
+
+	for (int i = 0; i < materialCount; i++)
+	{
+		float3 color = make_float3(material[i].color.value.x * 255, material[i].color.value.y * 255, material[i].color.value.z * 255);
+
+		materials.emplace(i, color);
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
