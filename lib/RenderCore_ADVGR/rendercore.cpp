@@ -14,8 +14,7 @@
 */
 
 #include "core_settings.h"
-#include "Sphere.h"
-#include "Triangle.h"
+#include "Utils.h"
 
 using namespace lh2core;
 
@@ -25,20 +24,44 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
-	// initialize core
-	Sphere* sphere = new Sphere();
-	sphere->m_CenterPosition = make_float3(0, 0, 5);
-	sphere->m_Radius = 0.5;
-	sphere->m_color = make_float3(0, 255, 0);
+	Sphere sphere;
+	sphere.index = 1;
+	sphere.m_CenterPosition = make_float3(-0.4, -0.2, 0.6);
+	sphere.m_Radius = 0.2;
+	sphere.m_color = make_float3(255, 0, 0);
 
-	Triangle* triangle = new Triangle();
-	triangle->point1 = make_float3(0.3, 0.1, 1);
-	triangle->point2 = make_float3(0.3, 0, 1);
-	triangle->point3 = make_float3(0.4, 0, 1);
-	triangle->m_color = make_float3(255, 0, 0);
+	Sphere sphere2;
+	sphere2.index = 2;
+	sphere2.m_CenterPosition = make_float3(-0.2, -0.2, 0.8);
+	sphere2.m_Radius = 0.2;
+	sphere2.m_color = make_float3(255, 255, 0);
 
-	m_Primitives.push_back(sphere);
-	m_Primitives.push_back(triangle);
+	Sphere sphere3;
+	sphere3.index = 3;
+	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 1.0);
+	sphere3.m_Radius = 0.2;
+	sphere3.m_color = make_float3(255, 0, 255);
+
+	spheres.push_back(sphere);
+	spheres.push_back(sphere2);
+	spheres.push_back(sphere3);
+
+	Triangle triangle;
+	triangle.index = 4;
+	triangle.point1 = make_float3(-50, -0.4, -50);
+	triangle.point2 = make_float3(50, -0.4, -50);
+	triangle.point3 = make_float3(-50, -0.4, 50);
+	triangle.m_color = make_float3(0, 255, 0);
+
+	Triangle triangle2;
+	triangle2.index = 5;
+	triangle2.point1 = make_float3(50, -0.4, -50);
+	triangle2.point2 = make_float3(50, -0.4, 50);
+	triangle2.point3 = make_float3(-50, -0.4, 50);
+	triangle2.m_color = make_float3(0, 255, 0);
+
+	triangles.push_back(triangle);
+	triangles.push_back(triangle2);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -88,10 +111,14 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	{
 		for (int x = 0; x < SCRWIDTH; x++)
 		{
-			float3 sx = x * dx * (view.p2 - view.p1); // screen width
-			float3 sy = y * dy * (view.p3 - view.p1); // screen height
-			float3 point = view.p1 + sx + sy;         // point on the screen
-			float3 direction = normalize(point - view.pos); // direction
+			// screen width
+			float3 sx = x * dx * (view.p2 - view.p1);
+			// screen height
+			float3 sy = y * dy * (view.p3 - view.p1);
+			// point on the screen
+			float3 point = view.p1 + sx + sy;
+			// direction
+			float3 direction = normalize(point - view.pos);
 
 			ray.t = INT_MAX;
 			ray.m_Origin = view.pos;
@@ -120,21 +147,83 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 float3 lh2core::RenderCore::Trace(Ray ray)
 {
-	auto intersect = false;
+	int index = 0;
+	int closestIndex = 0;
 
-	//TODO save closest shape and draw that color.
-	for (auto &shape : m_Primitives)
-	{
-		intersect = shape->Intersect(ray);
+	float t_min = numeric_limits<float>::max();
+	float t = numeric_limits<float>::max();
 
-		if (intersect)
+	float3 color;
+
+	for (Triangle& triangle : triangles) {
+
+		t = Utils::IntersectTriangle(ray, triangle.point1, triangle.point2, triangle.point3);
+
+		if (t < t_min)
 		{
-			return shape->m_color;
+			t_min = t;
+			closestIndex = triangle.index;
+			color = triangle.m_color;
 		}
 	}
 
+	for (Sphere &sphere : spheres) {
+		
+		t = Utils::IntersectSphere(ray, sphere);
 
-	return make_float3(0, 0, 0);
+		if (t < t_min) 
+		{
+			t_min = t;
+			closestIndex = sphere.index;
+			color = sphere.m_color;
+		}
+	}
+
+	if (t_min == numeric_limits<float>::max())
+	{
+		return make_float3(0, 0, 125);
+	}
+
+	if (closestIndex == 0)
+	{
+		return make_float3(0, 100, 0);
+	}
+
+	return color;
+}
+
+void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
+{
+	if (materialCount == materials.size())
+	{
+		return;
+	}
+
+	for (int i = 0; i < materialCount; i++)
+	{
+		float3 color = make_float3(material[i].color.value.x * 255.0, material[i].color.value.y * 255.0, material[i].color.value.z * 255.0);
+
+		materials.emplace(i, color);
+	}
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::SetLights                                                      |
+//  |  Set the light data.                                                  LH2'19|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCount,
+	const CorePointLight* pointLights, const int pointLightCount,
+	const CoreSpotLight* spotLights, const int spotLightCount,
+	const CoreDirectionalLight* directionalLights, const int directionalLightCount)
+{
+	// not supported yet
+	for (int i = 0; i < pointLightCount; i++)
+	{
+		pointLight.position = pointLights[i].position;
+		pointLight.dummy = pointLights[i].dummy;
+		pointLight.energy = pointLights[i].energy;
+		pointLight.radiance = pointLights[i].radiance;
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -152,12 +241,6 @@ CoreStats RenderCore::GetCoreStats() const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Shutdown()
 {
-	for (auto shape : m_Primitives)
-	{
-		delete shape;
-	}
-
-	delete screen;
 }
 
 // EOF
