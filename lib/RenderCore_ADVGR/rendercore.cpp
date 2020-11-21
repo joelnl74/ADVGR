@@ -153,7 +153,9 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 	float t_min = numeric_limits<float>::max();
 	float t = numeric_limits<float>::max();
 
+
 	float3 color;
+	float specularity = 0.0f;
 
 	for (Triangle& triangle : triangles) {
 
@@ -163,7 +165,9 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 		{
 			t_min = t;
 			closestIndex = triangle.index;
+			
 			color = triangle.m_color;
+			specularity = triangle.specularity;
 		}
 	}
 
@@ -175,9 +179,14 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 		{
 			t_min = t;
 			closestIndex = sphere.index;
+
 			color = sphere.m_color;
+			specularity = sphere.specularity;
 		}
 	}
+
+	float diffuse = 1 - specularity;
+	float3 origin = ray.m_Direction * t_min + ray.m_Origin;
 
 	if (t_min == numeric_limits<float>::max())
 	{

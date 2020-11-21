@@ -14,4 +14,7 @@ public:
 
 	float3 m_color;
 	int index;
+
+	// Material
+	float specularity;
 };

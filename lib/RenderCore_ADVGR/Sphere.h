@@ -10,7 +10,12 @@ public:
 
 public:
 	float3 m_CenterPosition;
-	float m_Radius;
 	float3 m_color;
+
+	float m_Radius;
+
 	int index;
+
+	// Material
+	float specularity;
 };
