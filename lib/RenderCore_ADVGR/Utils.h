@@ -2,6 +2,7 @@
 #include "Ray.h"
 #include "core_api_base.h"
 #include "Sphere.h"
+#include "Triangle.h"
 
 class Utils
 {
@@ -23,13 +24,13 @@ public:
         return numeric_limits<float>::max();
     }
     
-	static float IntersectTriangle(Ray ray, const CoreTri& tri)
-	{
+    static float IntersectTriangle(Ray ray, float3 p0, float3 p1, float3 p2)
+    {
         float3 edge1, edge2, h, s, q;
         float a, f, u, v;
 
-        edge1 = tri.vertex1 - tri.vertex0;
-        edge2 = tri.vertex2 - tri.vertex0;
+        edge1 = p1 - p0;
+        edge2 = p2 - p0;
 
         h = cross(ray.m_Direction, edge2);
         a = dot(edge1, h);
@@ -40,7 +41,7 @@ public:
         }
 
         f = 1.0 / a;
-        s = ray.m_Origin - tri.vertex0;
+        s = ray.m_Origin - p0;
         u = f * dot(s, h);
 
         if (u < 0.0 || u > 1.0)
@@ -64,5 +65,26 @@ public:
         }
 
         return numeric_limits<float>::max();
-	}
+    }
+
+    static float intersectPlane(Ray ray, float3 planeNormal, float3 planePostion)
+    {
+        float denom = dot(planeNormal, ray.m_Direction);
+
+        if (abs(denom) > EPSILON) // your favorite epsilon
+        {
+            float3 difference = planePostion - ray.m_Origin;
+            float t = dot(difference, planeNormal) / denom;
+
+            if (t < 0)
+            {
+                return numeric_limits<float>::max();
+            }
+
+            return t;
+
+        }
+
+        return numeric_limits<float>::max();
+    }
 };

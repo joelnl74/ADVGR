@@ -15,6 +15,8 @@
 
 #pragma once
 #include "Ray.h"
+#include "Sphere.h"
+#include "Triangle.h"
 #include "rendersystem.h"
 
 namespace lh2core
@@ -46,6 +48,10 @@ public:
 	void Render( const ViewPyramid& view, const Convergence converge, bool async );
 	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
 	void SetMaterials(CoreMaterial* mat, const int materialCount);
+	void SetLights(const CoreLightTri* triLights, const int triLightCount,
+		const CorePointLight* pointLights, const int pointLightCount,
+		const CoreSpotLight* spotLights, const int spotLightCount,
+		const CoreDirectionalLight* directionalLights, const int directionalLightCount);
 	CoreStats GetCoreStats() const override;
 	void Shutdown();
 	float3 Trace(Ray ray);
@@ -54,12 +60,7 @@ public:
 	inline void SetProbePos( const int2 pos ) override {}
 	inline void Setting( const char* name, float value ) override {}
 	inline void SetTextures( const CoreTexDesc* tex, const int textureCount ) override {}
-	inline void SetLights( const CoreLightTri* triLights, const int triLightCount,
-		const CorePointLight* pointLights, const int pointLightCount,
-		const CoreSpotLight* spotLights, const int spotLightCount,
-		const CoreDirectionalLight* directionalLights, const int directionalLightCount ) override
-	{
-	}
+
 	inline void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight ) override {}
 	inline void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) override {}
 	inline void FinalizeInstances() override {}
@@ -75,6 +76,11 @@ public:
 	CoreStats coreStats;							// rendering statistics
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
+
+	vector<Sphere> spheres;
+	vector<Triangle> triangles;
+
+	CorePointLight pointLight;
 
 	map<int, float3> materials;
 };
