@@ -118,7 +118,6 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">core_settings.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="Sphere.cpp" />
-    <ClCompile Include="Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core_settings.h" />
@@ -126,7 +125,6 @@
     <ClInclude Include="Ray.h" />
     <ClInclude Include="rendercore.h" />
     <ClInclude Include="Sphere.h" />
-    <ClInclude Include="Triangle.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>

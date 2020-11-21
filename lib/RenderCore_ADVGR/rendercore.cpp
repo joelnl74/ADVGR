@@ -162,12 +162,6 @@ CoreStats RenderCore::GetCoreStats() const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Shutdown()
 {
-	for (auto shape : m_Primitives)
-	{
-		delete shape;
-	}
-
-	delete screen;
 }
 
 // EOF

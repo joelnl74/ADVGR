@@ -14,7 +14,6 @@
 */
 
 #pragma once
-#include "Primitive.h"
 #include "Ray.h"
 #include "rendersystem.h"
 
@@ -77,7 +76,6 @@ public:
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 
-	vector<Primitive*> m_Primitives;
 	map<int, float3> materials;
 };
 
