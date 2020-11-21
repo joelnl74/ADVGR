@@ -13,8 +13,7 @@ public:
 	float3 point3;
 
 	float3 m_color;
-	int index;
 
-	// Material
-	float specularity;
+	int index;
+	int materialIndex;
 };

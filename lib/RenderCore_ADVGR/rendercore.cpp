@@ -25,40 +25,49 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.index = 1;
+	sphere.index = 0;
 	sphere.m_CenterPosition = make_float3(-0.4, -0.2, 0.6);
 	sphere.m_Radius = 0.2;
-	sphere.m_color = make_float3(255, 0, 0);
 
 	Sphere sphere2;
-	sphere2.index = 2;
+	sphere2.index = 1;
 	sphere2.m_CenterPosition = make_float3(-0.2, -0.2, 0.8);
 	sphere2.m_Radius = 0.2;
-	sphere2.m_color = make_float3(255, 255, 0);
 
 	Sphere sphere3;
-	sphere3.index = 3;
+	sphere3.index = 2;
 	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 1.0);
 	sphere3.m_Radius = 0.2;
-	sphere3.m_color = make_float3(255, 0, 255);
 
 	spheres.push_back(sphere);
 	spheres.push_back(sphere2);
 	spheres.push_back(sphere3);
 
+	Material material(0, make_float3(255, 0, 0), 0.9);
+	Material material1(1, make_float3(255, 255, 0), 0.8);
+	Material material2(2, make_float3(255, 0, 255), 0.7);
+
+	m_materials.push_back(material);
+	m_materials.push_back(material1);
+	m_materials.push_back(material2);
+
 	Triangle triangle;
-	triangle.index = 4;
+	triangle.index = 3;
 	triangle.point1 = make_float3(-50, -0.4, -50);
 	triangle.point2 = make_float3(50, -0.4, -50);
 	triangle.point3 = make_float3(-50, -0.4, 50);
-	triangle.m_color = make_float3(0, 255, 0);
 
 	Triangle triangle2;
-	triangle2.index = 5;
+	triangle2.index = 4;
 	triangle2.point1 = make_float3(50, -0.4, -50);
 	triangle2.point2 = make_float3(50, -0.4, 50);
 	triangle2.point3 = make_float3(-50, -0.4, 50);
-	triangle2.m_color = make_float3(0, 255, 0);
+
+	Material material3(3, make_float3(0, 255, 0), 0.9);
+	Material material4(4, make_float3(0, 255, 0), 0.9);
+
+	m_materials.push_back(material3);
+	m_materials.push_back(material4);
 
 	triangles.push_back(triangle);
 	triangles.push_back(triangle2);
@@ -147,15 +156,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 float3 lh2core::RenderCore::Trace(Ray ray)
 {
-	int index = 0;
 	int closestIndex = 0;
 
 	float t_min = numeric_limits<float>::max();
 	float t = numeric_limits<float>::max();
-
-
-	float3 color;
-	float specularity = 0.0f;
 
 	for (Triangle& triangle : triangles) {
 
@@ -165,9 +169,6 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 		{
 			t_min = t;
 			closestIndex = triangle.index;
-			
-			color = triangle.m_color;
-			specularity = triangle.specularity;
 		}
 	}
 
@@ -179,26 +180,18 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 		{
 			t_min = t;
 			closestIndex = sphere.index;
-
-			color = sphere.m_color;
-			specularity = sphere.specularity;
 		}
 	}
 
-	float diffuse = 1 - specularity;
-	float3 origin = ray.m_Direction * t_min + ray.m_Origin;
-
 	if (t_min == numeric_limits<float>::max())
 	{
-		return make_float3(0, 0, 125);
+		return make_float3(0, 70, 125);
 	}
 
-	if (closestIndex == 0)
-	{
-		return make_float3(0, 100, 0);
-	}
+	float3 origin = ray.m_Direction * t_min + ray.m_Origin;
+	Material material = m_materials[closestIndex];
 
-	return color;
+	return material.m_color;
 }
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)

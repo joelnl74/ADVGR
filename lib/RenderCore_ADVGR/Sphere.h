@@ -15,7 +15,5 @@ public:
 	float m_Radius;
 
 	int index;
-
-	// Material
-	float specularity;
+	int materialIndex;
 };

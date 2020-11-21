@@ -17,6 +17,7 @@
 #include "Ray.h"
 #include "Sphere.h"
 #include "Triangle.h"
+#include "Material.h"
 #include "rendersystem.h"
 
 namespace lh2core
@@ -83,6 +84,7 @@ public:
 
 	vector<Sphere> spheres;
 	vector<Triangle> triangles;
+	vector<Material> m_materials;
 
 	CorePointLight pointLight;
 
