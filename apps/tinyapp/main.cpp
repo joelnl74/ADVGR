@@ -34,7 +34,7 @@ static std::bitset<1024> keystates;
 void PrepareScene()
 {
 	// initialize scene
-	int boxScene = renderer->AddMesh( "../_shareddata/basic_box.obj", 0.2f);
+	int boxScene = renderer->AddMesh( "../_shareddata/basic_box.obj", 0.1f);
 	renderer->AddInstance(boxScene);
 	renderer->AddPointLight(make_float3(0, 20, 0), 50 * make_float3(10, 10, 10));
 }
