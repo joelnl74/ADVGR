@@ -192,6 +192,11 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 	return color;
 }
 
+float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
+{
+	return float3();
+}
+
 void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 {
 	if (materialCount == materials.size())

@@ -45,7 +45,6 @@ public:
 	void Init();
 	void SetTarget( GLTexture* target, const uint spp );
 	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles );
-	void Render( const ViewPyramid& view, const Convergence converge, bool async );
 	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
 	void SetMaterials(CoreMaterial* mat, const int materialCount);
 	void SetLights(const CoreLightTri* triLights, const int triLightCount,
@@ -54,7 +53,12 @@ public:
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount);
 	CoreStats GetCoreStats() const override;
 	void Shutdown();
+
+	// Our methods:
+	void Render(const ViewPyramid& view, const Convergence converge, bool async);
 	float3 Trace(Ray ray);
+	float3 DirectIllumination(float3& origin, float3& normal);
+
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
