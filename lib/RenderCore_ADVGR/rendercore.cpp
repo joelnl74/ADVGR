@@ -14,8 +14,7 @@
 */
 
 #include "core_settings.h"
-#include "Sphere.h"
-#include "Triangle.h"
+#include "Utils.h"
 
 using namespace lh2core;
 
@@ -26,19 +25,6 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	// initialize core
-	Sphere* sphere = new Sphere();
-	sphere->m_CenterPosition = make_float3(0, 0, 5);
-	sphere->m_Radius = 0.5;
-	sphere->m_color = make_float3(0, 255, 0);
-
-	Triangle* triangle = new Triangle();
-	triangle->point1 = make_float3(0.3, 0.1, 1);
-	triangle->point2 = make_float3(0.3, 0, 1);
-	triangle->point3 = make_float3(0.4, 0, 1);
-	triangle->m_color = make_float3(255, 0, 0);
-
-	m_Primitives.push_back(sphere);
-	m_Primitives.push_back(triangle);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -80,18 +66,22 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 {
 	Ray ray;
 
-	float dx = 1.0f / (SCRWIDTH - 1);
-	float dy = 1.0f / (SCRHEIGHT - 1);
+	float dx = 2.0f / (SCRWIDTH - 1);
+	float dy = 2.0f / (SCRHEIGHT - 1);
 
 	// render
 	for (int y = 0; y < SCRHEIGHT; y++)
 	{
 		for (int x = 0; x < SCRWIDTH; x++)
 		{
-			float3 sx = x * dx * (view.p2 - view.p1); // screen width
-			float3 sy = y * dy * (view.p3 - view.p1); // screen height
-			float3 point = view.p1 + sx + sy;         // point on the screen
-			float3 direction = normalize(point - view.pos); // direction
+			// screen width
+			float3 sx = x * dx * (view.p2 - view.p1);
+			// screen height
+			float3 sy = y * dy * (view.p3 - view.p1);
+			// point on the screen
+			float3 point = view.p1 + sx + sy;
+			// direction
+			float3 direction = normalize(point - view.pos);
 
 			ray.t = INT_MAX;
 			ray.m_Origin = view.pos;
@@ -120,21 +110,27 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 float3 lh2core::RenderCore::Trace(Ray ray)
 {
-	auto intersect = false;
+	CoreTri* tri;
 
-	//TODO save closest shape and draw that color.
-	for (auto &shape : m_Primitives)
-	{
-		intersect = shape->Intersect(ray);
+	float t_min = numeric_limits<float>::max();
+	for (Mesh& mesh : meshes) {
+		for (int i = 0; i < mesh.vcount / 3; i++) {
+			auto t = Utils::IntersectTriangle(ray, mesh.triangles[i]);
 
-		if (intersect)
-		{
-			return shape->m_color;
+			if (t < t_min) {
+				t_min = t;
+				tri = &mesh.triangles[i];
+			}
 		}
 	}
 
+	if (t_min == numeric_limits<float>::max())
+	{
+		return make_float3(0, 0, 0);
+	}
 
-	return make_float3(0, 0, 0);
+	return make_float3(255, 0, 0);
+
 }
 
 //  +-----------------------------------------------------------------------------+

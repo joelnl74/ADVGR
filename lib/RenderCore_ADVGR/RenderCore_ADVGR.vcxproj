@@ -127,6 +127,7 @@
     <ClInclude Include="rendercore.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Triangle.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\platform\platform.vcxproj">
