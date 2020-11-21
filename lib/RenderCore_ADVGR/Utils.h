@@ -9,12 +9,13 @@ public:
 	{
         float3 edge1, edge2, h, s, q;
         float a, f, u, v;
+
         edge1 = tri.vertex1 - tri.vertex0;
         edge2 = tri.vertex2 - tri.vertex0;
+
         h = cross(ray.m_Direction, edge2);
         a = dot(edge1, h);
 
-        // if ray is parallel, quit
         if (a > -EPSILON && a < EPSILON)
         {
             return numeric_limits<float>::max();
@@ -37,9 +38,9 @@ public:
             return numeric_limits<float>::max();
         }
 
-        // compute t
+        // At this stage we can compute t to find out where the intersection point is on the line.
         float tt = f * dot(edge2, q);
-        // ray intersection
+
         if (tt > EPSILON && tt < 1 / EPSILON) {
             return tt;
         }
