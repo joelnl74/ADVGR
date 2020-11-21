@@ -1,10 +1,28 @@
 #pragma once
 #include "Ray.h"
 #include "core_api_base.h"
+#include "Sphere.h"
 
 class Utils
 {
 public:
+    static float IntersectSphere(Ray ray, Sphere sphere)
+    {
+        float3 oc = ray.m_Origin - sphere.m_CenterPosition;
+        float a = dot(ray.m_Direction, ray.m_Direction);
+        float b = 2.0 * dot(oc, ray.m_Direction);
+        float c = dot(oc, oc) - sphere.m_Radius * sphere.m_Radius;
+        float discriminant = b * b - 4 * a * c;
+        if (discriminant < 0) {
+            return numeric_limits<float>::max();
+        }
+        else {
+            return (-b - sqrt(discriminant)) / (2.0 * a);
+        }
+
+        return numeric_limits<float>::max();
+    }
+    
 	static float IntersectTriangle(Ray ray, const CoreTri& tri)
 	{
         float3 edge1, edge2, h, s, q;
