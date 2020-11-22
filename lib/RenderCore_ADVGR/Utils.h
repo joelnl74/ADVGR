@@ -21,7 +21,7 @@ public:
 
         t -= sqrt(r2 - p2);
 
-        if (t > 0)
+        if (t > 0.001)
         {
             return t;
         }
