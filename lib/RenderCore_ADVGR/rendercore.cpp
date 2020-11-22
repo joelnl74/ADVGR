@@ -69,8 +69,8 @@ void RenderCore::Init()
 	triangle2.point3 = make_float3(-50, -0.4, 50);
 	triangles.push_back(triangle2);
 
-	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.25);
-	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.25);
+	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0);
+	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0);
 
 	m_materials.push_back(material3);
 	m_materials.push_back(material4);
@@ -136,7 +136,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
 
-			screenData[x + y * SCRWIDTH] = Trace(ray, 0);
+			screenData[x + y * SCRWIDTH] = Trace(ray, 0, x, y);
 		}
 	}
 
@@ -191,7 +191,7 @@ tuple<int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 	return make_tuple(closestIndex, t_min, isTriangle);
 }
 
-float3 RenderCore::Trace(Ray ray, int depth)
+float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 {
 	tuple intersect = Intersect(ray);
 
@@ -203,9 +203,10 @@ float3 RenderCore::Trace(Ray ray, int depth)
 	{
 		return make_float3(0, 0.5, 1);
 	}
-
-	float3 normalVector;
 	Material material = m_materials[closestIndex];
+
+	float3 color = material.m_color;
+	float3 normalVector;
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
 	if (depth > maxDepth)
@@ -214,6 +215,15 @@ float3 RenderCore::Trace(Ray ray, int depth)
 	if (isTriangle)
 	{
 		normalVector = cross(triangles[closestIndex].point1, triangles[closestIndex].point2);
+
+		if (x + y % 2 == 0) 
+		{
+			color = make_float3(1, 1, 0);
+		}
+		else 
+		{
+			color = make_float3(1, 1, 1);
+		}
 	}
 	else
 	{
@@ -224,8 +234,7 @@ float3 RenderCore::Trace(Ray ray, int depth)
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-
-		float3 m_diffuseColor = material.m_diffuse * material.m_color * DirectIllumination(intersectionPoint, normalVector);
+		float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, normalVector);
 
 		return m_diffuseColor;
 	}
