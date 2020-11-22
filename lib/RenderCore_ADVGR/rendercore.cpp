@@ -199,30 +199,6 @@ float3 RenderCore::Trace(Ray ray)
 	float t_min = get<1>(intersect);
 	bool isTriangle = get<2>(intersect);
 
-	for (Triangle& triangle : triangles) {
-
-		float t = Utils::IntersectTriangle(ray, triangle.point1, triangle.point2, triangle.point3);
-
-		if (t < t_min)
-		{
-			t_min = t;
-			closestIndex = triangle.index;
-			isTriangle = true;
-		}
-	}
-
-	for (Sphere &sphere : spheres) {
-		
-		float t = Utils::IntersectSphere(ray, sphere);
-
-		if (t < t_min) 
-		{
-			t_min = t;
-			closestIndex = sphere.index;
-			isTriangle = false;
-		}
-	}
-
 	if (t_min == numeric_limits<float>::max())
 	{
 		return make_float3(0, 0.5, 1);
@@ -246,7 +222,6 @@ float3 RenderCore::Trace(Ray ray)
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
 
-		//TODO get the normal vector.
 		float3 m_diffuseColor = material.m_diffuse * material.m_color * DirectIllumination(intersectionPoint, normalVector);
 
 		return m_diffuseColor;
