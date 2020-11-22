@@ -45,9 +45,9 @@ void RenderCore::Init()
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
-	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 0, 0), 0.9);
-	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.8);
-	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.7);
+	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 0, 0), 0.8);
+	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.7);
+	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.6);
 
 	m_materials.push_back(material);
 	m_materials.push_back(material1);
@@ -69,8 +69,8 @@ void RenderCore::Init()
 	triangle2.point3 = make_float3(-50, -0.4, 50);
 	triangles.push_back(triangle2);
 
-	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.0);
-	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.0);
+	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.25);
+	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.25);
 
 	m_materials.push_back(material3);
 	m_materials.push_back(material4);
@@ -215,7 +215,7 @@ float3 RenderCore::Trace(Ray ray)
 	else
 	{
 		// Look up how we calculate sphere normals.
-		normalVector = make_float3(0, 0, 1);
+		normalVector = make_float3(0, -1, 0);
 	}
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
@@ -240,7 +240,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 
 	float t_min = get<1>(intersect);
 
-	if (t_min == numeric_limits<float>::max())
+	if (t_min != numeric_limits<float>::max())
 	{
 		return make_float3(0.0f, 0.0f, 0.0f);
 	}
