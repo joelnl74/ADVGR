@@ -218,7 +218,6 @@ float3 RenderCore::Trace(Ray ray)
 		normalVector = make_float3(0, 0, 1);
 	}
 
-
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
 
@@ -234,8 +233,8 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 {
 	CorePointLight light = pointLight;
 
-	float3 dir = normalize(light.position - origin);
-	Ray shadowRay = Ray(origin, dir);
+	float3 direction = normalize(light.position - origin);
+	Ray shadowRay = Ray(origin, direction);
 
 	tuple intersect = Intersect(shadowRay);
 
@@ -246,7 +245,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 		return make_float3(0.0f, 0.0f, 0.0f);
 	}
 
-	float3 vec1 = normalize(dir - origin);
+	float3 vec1 = normalize(direction - origin);
 	float3 vec2 = normalize(normal - origin);
 
 	float angle = (acos(dot(vec1, vec2)) * 180 / PI) / 90;
