@@ -27,14 +27,14 @@ void RenderCore::Init()
 	Sphere sphere;
 	sphere.index = 0;
 	sphere.materialIndex = 0;
-	sphere.m_CenterPosition = make_float3(-0.4, -0.2, 1.4);
+	sphere.m_CenterPosition = make_float3(-0.2, -0.2, 1.6);
 	sphere.m_Radius = 0.2;
 	spheres.push_back(sphere);
 
 	Sphere sphere2;
 	sphere2.index = 1;
 	sphere2.materialIndex = 1;
-	sphere2.m_CenterPosition = make_float3(-0.2, -0.2, 1.6);
+	sphere2.m_CenterPosition = make_float3(-0.4, -0.2, 1.4);
 	sphere2.m_Radius = 0.2;
 	spheres.push_back(sphere2);
 
@@ -45,7 +45,7 @@ void RenderCore::Init()
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
-	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 0, 0), 0.6);
+	Material material(0, MaterialTypes::MIRROR, make_float3(1, 1, 1), 1);
 	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.5);
 	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.4);
 
@@ -205,7 +205,6 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	float t_min = get<2>(intersect);
 	bool isTriangle = get<3>(intersect);
 
-
 	if (t_min == numeric_limits<float>::max())
 	{
 		return make_float3(0, 0.5, 1);
@@ -264,13 +263,13 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		reflected.m_Origin = intersectionPoint;
 		reflected.m_Direction = Reflect(ray.m_Direction, normalVector);
 		
-		float3 m_reflectedColor = material.m_color;
+		float3 m_reflectedColor = color;
 		m_reflectedColor *= Trace(reflected, depth + 1);
 
 		return m_reflectedColor;
 	}
 
-	return material.m_color;
+	return color;
 }
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
