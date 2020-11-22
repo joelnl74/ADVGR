@@ -9,19 +9,22 @@ class Utils
 public:
     static float IntersectSphere(Ray ray, Sphere sphere)
     {
-        float3 oc = ray.m_Origin - sphere.m_CenterPosition;
-        float a = dot(ray.m_Direction, ray.m_Direction);
-        float b = 2.0 * dot(oc, ray.m_Direction);
-        float c = dot(oc, oc) - sphere.m_Radius * sphere.m_Radius;
-        float discriminant = b * b - 4 * a * c;
-        if (discriminant < 0) {
+        float3 C = sphere.m_CenterPosition - ray.m_Origin;
+        float t = dot(C, ray.m_Direction);
+        float3 Q = C - t * ray.m_Direction;
+        float p2 = dot(Q, Q);
+        float r2 = sphere.m_Radius * sphere.m_Radius;
+        if (p2 > (r2))
+        {
             return numeric_limits<float>::max();
         }
-        else {
-            return (-b - sqrt(discriminant)) / (2.0 * a);
-        }
 
-        return numeric_limits<float>::max();
+        t -= sqrt(r2 - p2);
+
+        if ((t < ray.t) && (t > 0))
+        {
+            return t;
+        }
     }
     
     static float IntersectTriangle(Ray ray, float3 p0, float3 p1, float3 p2)

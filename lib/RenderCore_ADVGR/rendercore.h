@@ -62,7 +62,6 @@ public:
 	float3 DirectIllumination(float3& origin, float3& normal);
 	float3 Reflect(float3& in, float3 normal);
 
-
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
 	inline void Setting( const char* name, float value ) override {}

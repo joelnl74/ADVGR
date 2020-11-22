@@ -215,7 +215,8 @@ float3 RenderCore::Trace(Ray ray)
 	else
 	{
 		// Look up how we calculate sphere normals.
-		normalVector = normalize(spheres[closestIndex].m_CenterPosition - intersectionPoint);
+		intersectionPoint = normalize(intersectionPoint);
+		normalVector = spheres[closestIndex].m_CenterPosition - intersectionPoint;
 	}
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
@@ -232,7 +233,6 @@ float3 RenderCore::Trace(Ray ray)
 	{
 		return material.m_color;
 	}
-
 
 	return material.m_color;
 }
