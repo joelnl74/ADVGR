@@ -58,7 +58,7 @@ public:
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
 	tuple<int, float, bool> Intersect(Ray ray);
-	float3 Trace(Ray ray);
+	float3 Trace(Ray ray, int depth);
 	float3 DirectIllumination(float3& origin, float3& normal);
 	float3 Reflect(float3& in, float3 normal);
 
@@ -88,6 +88,7 @@ public:
 	vector<Material> m_materials;
 
 	CorePointLight pointLight;
+	int maxDepth = 3;
 
 	map<int, float3> materials;
 };
