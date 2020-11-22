@@ -45,9 +45,9 @@ void RenderCore::Init()
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
-	Material material(0, MaterialTypes::MIRROR, make_float3(1, 0, 0), 1);
-	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.7);
-	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.6);
+	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 0, 0), 0.6);
+	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.5);
+	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.4);
 
 	m_materials.push_back(material);
 	m_materials.push_back(material1);
@@ -69,8 +69,8 @@ void RenderCore::Init()
 	triangle2.point3 = make_float3(-50, -0.4, 50);
 	triangles.push_back(triangle2);
 
-	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
-	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
+	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.5);
+	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.5);
 
 	m_materials.push_back(material3);
 	m_materials.push_back(material4);
@@ -118,6 +118,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	float dx = 1.0f / (SCRWIDTH - 1);
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
+	swapColor = false;
+
 	// render
 	for (int y = 0; y < SCRHEIGHT; y++)
 	{
@@ -163,7 +165,7 @@ tuple<int, int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 	int materialIndex = 0;
 
 	float t_min = numeric_limits<float>::max();
-	bool isTriangle = false;
+	bool isTriangle = true;
 
 	for (Triangle& triangle : triangles) {
 
@@ -203,24 +205,41 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	float t_min = get<2>(intersect);
 	bool isTriangle = get<3>(intersect);
 
+
 	if (t_min == numeric_limits<float>::max())
 	{
 		return make_float3(0, 0.5, 1);
 	}
-	Material material = m_materials[materialIndex];
 
+	Material material = m_materials[materialIndex];
 	float3 color = material.m_color;
 	float3 normalVector;
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
-
+	
 	if (depth > maxDepth)
 	{
-		return material.m_color;
+		return color;
 	}
 	
+	if ((y + x) % 16 == 0)
+	{
+		if (swapColor == false)
+		{
+			checkerBoardColor = make_float3(1, 1, 0);
+			swapColor = true;
+		}
+		else
+		{
+			checkerBoardColor = make_float3(1, 1, 1);
+			swapColor = false;
+		}
+	}
+
 	if (isTriangle)
 	{
 		normalVector = cross(triangles[closestIndex].point1, triangles[closestIndex].point2);
+
+		color = checkerBoardColor;
 	}
 	else
 	{
@@ -237,7 +256,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	}
 	else if (material.m_materialType == MaterialTypes::GLASS)
 	{
-		return material.m_color;
+		return color;
 	}
 	else if (material.m_materialType == MaterialTypes::MIRROR)
 	{
