@@ -26,21 +26,23 @@ void RenderCore::Init()
 {
 	Sphere sphere;
 	sphere.index = 0;
+	sphere.materialIndex = 0;
 	sphere.m_CenterPosition = make_float3(-0.4, -0.2, 0.6);
 	sphere.m_Radius = 0.2;
+	spheres.push_back(sphere);
 
 	Sphere sphere2;
 	sphere2.index = 1;
+	sphere2.materialIndex = 1;
 	sphere2.m_CenterPosition = make_float3(-0.2, -0.2, 0.8);
 	sphere2.m_Radius = 0.2;
+	spheres.push_back(sphere2);
 
 	Sphere sphere3;
 	sphere3.index = 2;
+	sphere3.materialIndex = 2;
 	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 1.0);
 	sphere3.m_Radius = 0.2;
-
-	spheres.push_back(sphere);
-	spheres.push_back(sphere2);
 	spheres.push_back(sphere3);
 
 	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 0, 0), 0.9);
@@ -52,25 +54,26 @@ void RenderCore::Init()
 	m_materials.push_back(material2);
 
 	Triangle triangle;
-	triangle.index = 3;
+	triangle.index = 0;
+	triangle.materialIndex = 3;
 	triangle.point1 = make_float3(-50, -0.4, -50);
 	triangle.point2 = make_float3(50, -0.4, -50);
 	triangle.point3 = make_float3(-50, -0.4, 50);
+	triangles.push_back(triangle);
 
 	Triangle triangle2;
-	triangle2.index = 4;
+	triangle2.index = 1;
+	triangle2.materialIndex = 4;
 	triangle2.point1 = make_float3(50, -0.4, -50);
 	triangle2.point2 = make_float3(50, -0.4, 50);
 	triangle2.point3 = make_float3(-50, -0.4, 50);
+	triangles.push_back(triangle2);
 
-	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
-	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
+	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.1);
+	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.1);
 
 	m_materials.push_back(material3);
 	m_materials.push_back(material4);
-
-	triangles.push_back(triangle);
-	triangles.push_back(triangle2);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -154,32 +157,69 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-float3 RenderCore::Trace(Ray ray)
+tuple<int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 {
 	int closestIndex = 0;
 
 	float t_min = numeric_limits<float>::max();
-	float t = numeric_limits<float>::max();
+	bool isTriangle = false;;
 
 	for (Triangle& triangle : triangles) {
 
-		t = Utils::IntersectTriangle(ray, triangle.point1, triangle.point2, triangle.point3);
+		float t = Utils::IntersectTriangle(ray, triangle.point1, triangle.point2, triangle.point3);
 
 		if (t < t_min)
 		{
 			t_min = t;
 			closestIndex = triangle.index;
+			isTriangle = true;
+		}
+	}
+
+	for (Sphere& sphere : spheres) {
+
+		float t = Utils::IntersectSphere(ray, sphere);
+
+		if (t < t_min)
+		{
+			t_min = t;
+			closestIndex = sphere.index;
+			isTriangle = false;
+		}
+	}
+
+	return make_tuple(closestIndex, t_min, isTriangle);
+}
+
+float3 RenderCore::Trace(Ray ray)
+{
+	tuple intersect = Intersect(ray);
+
+	int closestIndex = get<0>(intersect);
+	float t_min = get<1>(intersect);
+	bool isTriangle = get<2>(intersect);
+
+	for (Triangle& triangle : triangles) {
+
+		float t = Utils::IntersectTriangle(ray, triangle.point1, triangle.point2, triangle.point3);
+
+		if (t < t_min)
+		{
+			t_min = t;
+			closestIndex = triangle.index;
+			isTriangle = true;
 		}
 	}
 
 	for (Sphere &sphere : spheres) {
 		
-		t = Utils::IntersectSphere(ray, sphere);
+		float t = Utils::IntersectSphere(ray, sphere);
 
 		if (t < t_min) 
 		{
 			t_min = t;
 			closestIndex = sphere.index;
+			isTriangle = false;
 		}
 	}
 
@@ -188,14 +228,26 @@ float3 RenderCore::Trace(Ray ray)
 		return make_float3(0, 0.5, 1);
 	}
 
+	float3 normalVector;
 	Material material = m_materials[closestIndex];
+	float3 intersectionPoint = ray.m_Direction * t_min + ray.m_Origin;
+	
+	if (isTriangle)
+	{
+		normalVector = cross(triangles[closestIndex].point1, triangles[closestIndex].point2);
+	}
+	else
+	{
+		// Look up how we calculate sphere normals.
+		normalVector = make_float3(0, 0, 1);
+	}
+
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-		float3 intersectionPoint = ray.m_Direction * t_min + ray.m_Origin;
 
 		//TODO get the normal vector.
-		float3 m_diffuseColor = material.m_diffuse * material.m_color * DirectIllumination(intersectionPoint, make_float3(0, 0, 0));
+		float3 m_diffuseColor = material.m_diffuse * material.m_color * DirectIllumination(intersectionPoint, normalVector);
 
 		return m_diffuseColor;
 	}
@@ -210,7 +262,21 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 	float3 dir = normalize(light.position - origin);
 	Ray shadowRay = Ray(origin, dir);
 
-	return make_float3(1, 1, 1);
+	tuple intersect = Intersect(shadowRay);
+
+	float t_min = get<1>(intersect);
+
+	if (t_min == numeric_limits<float>::max())
+	{
+		return make_float3(0.0f, 0.0f, 0.0f);
+	}
+
+	float3 vec1 = normalize(dir - origin);
+	float3 vec2 = normalize(normal - origin);
+
+	float angle = (acos(dot(vec1, vec2)) * 180 / PI) / 90;
+
+	return make_float3(angle, angle, angle);
 }
 
 void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
