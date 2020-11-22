@@ -57,7 +57,7 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	tuple<int, float, bool> Intersect(Ray ray);
+	tuple<int, int, float, bool> Intersect(Ray ray);
 	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
 	float3 DirectIllumination(float3& origin, float3& normal);
 	float3 Reflect(float3& in, float3 normal);
