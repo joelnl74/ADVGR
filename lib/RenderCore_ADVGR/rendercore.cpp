@@ -27,21 +27,21 @@ void RenderCore::Init()
 	Sphere sphere;
 	sphere.index = 0;
 	sphere.materialIndex = 0;
-	sphere.m_CenterPosition = make_float3(-0.4, -0.2, 0.6);
+	sphere.m_CenterPosition = make_float3(-0.4, -0.2, 1.4);
 	sphere.m_Radius = 0.2;
 	spheres.push_back(sphere);
 
 	Sphere sphere2;
 	sphere2.index = 1;
 	sphere2.materialIndex = 1;
-	sphere2.m_CenterPosition = make_float3(-0.2, -0.2, 0.8);
+	sphere2.m_CenterPosition = make_float3(-0.2, -0.2, 1.6);
 	sphere2.m_Radius = 0.2;
 	spheres.push_back(sphere2);
 
 	Sphere sphere3;
 	sphere3.index = 2;
 	sphere3.materialIndex = 2;
-	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 1.0);
+	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 1.8);
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
@@ -162,7 +162,7 @@ tuple<int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 	int closestIndex = 0;
 
 	float t_min = numeric_limits<float>::max();
-	bool isTriangle = false;;
+	bool isTriangle = false;
 
 	for (Triangle& triangle : triangles) {
 
@@ -206,7 +206,7 @@ float3 RenderCore::Trace(Ray ray)
 
 	float3 normalVector;
 	Material material = m_materials[closestIndex];
-	float3 intersectionPoint = ray.m_Direction * t_min + ray.m_Origin;
+	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 	
 	if (isTriangle)
 	{
@@ -215,12 +215,11 @@ float3 RenderCore::Trace(Ray ray)
 	else
 	{
 		// Look up how we calculate sphere normals.
-		normalVector = make_float3(0, -1, 0);
+		normalVector = intersectionPoint - make_float3(0, 0, -1);
 	}
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-
 		float3 m_diffuseColor = material.m_diffuse * material.m_color * DirectIllumination(intersectionPoint, normalVector);
 
 		return m_diffuseColor;
@@ -240,7 +239,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 
 	float t_min = get<1>(intersect);
 
-	if (t_min != numeric_limits<float>::max())
+	if (t_min == numeric_limits<float>::max())
 	{
 		return make_float3(0.0f, 0.0f, 0.0f);
 	}
