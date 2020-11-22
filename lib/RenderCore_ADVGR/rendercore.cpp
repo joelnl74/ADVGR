@@ -27,21 +27,21 @@ void RenderCore::Init()
 	Sphere sphere;
 	sphere.index = 0;
 	sphere.materialIndex = 0;
-	sphere.m_CenterPosition = make_float3(-0.2, -0.2, 1.6);
+	sphere.m_CenterPosition = make_float3(-0.6, -0.2, 1.6);
 	sphere.m_Radius = 0.2;
 	spheres.push_back(sphere);
 
 	Sphere sphere2;
 	sphere2.index = 1;
 	sphere2.materialIndex = 1;
-	sphere2.m_CenterPosition = make_float3(-0.4, -0.2, 1.4);
+	sphere2.m_CenterPosition = make_float3(0.0, -0.2, 1.6);
 	sphere2.m_Radius = 0.2;
 	spheres.push_back(sphere2);
 
 	Sphere sphere3;
 	sphere3.index = 2;
 	sphere3.materialIndex = 2;
-	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 1.8);
+	sphere3.m_CenterPosition = make_float3(0.6, -0.2, 1.6);
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
@@ -243,13 +243,15 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	else
 	{
 		// Look up how we calculate sphere normals.
-		intersectionPoint = normalize(intersectionPoint);
-		normalVector = intersectionPoint - spheres[closestIndex].m_CenterPosition;
+		// intersectionPoint = normalize(intersectionPoint);
+		normalVector = normalize(intersectionPoint - spheres[closestIndex].m_CenterPosition);
 	}
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-		float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, normalVector);
+		// float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, normalVector);
+		// float3 m_diffuseColor = material.m_diffuse * color;
+		float3 m_diffuseColor = 0.5 * make_float3(normalVector.x+1, normalVector.y+1, normalVector.z+1);
 
 		return m_diffuseColor;
 	}
