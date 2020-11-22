@@ -249,9 +249,9 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-		// float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, normalVector);
+		float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, 0.5 * make_float3(normalVector.x + 1, normalVector.y + 1, normalVector.z + 1));
 		// float3 m_diffuseColor = material.m_diffuse * color;
-		float3 m_diffuseColor = 0.5 * make_float3(normalVector.x+1, normalVector.y+1, normalVector.z+1);
+		// float3 m_diffuseColor = 0.5 * make_float3(normalVector.x+1, normalVector.y+1, normalVector.z+1);
 
 		return m_diffuseColor;
 	}

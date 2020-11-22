@@ -21,10 +21,12 @@ public:
 
         t -= sqrt(r2 - p2);
 
-        if ((t < ray.t) && (t > 0))
+        if (t > 0)
         {
             return t;
         }
+
+        return numeric_limits<float>::max();
     }
     
     static float IntersectTriangle(Ray ray, float3 p0, float3 p1, float3 p2)
