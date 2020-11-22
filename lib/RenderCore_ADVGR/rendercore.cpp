@@ -185,7 +185,7 @@ float3 RenderCore::Trace(Ray ray)
 
 	if (t_min == numeric_limits<float>::max())
 	{
-		return make_float3(0, 70, 125);
+		return make_float3(0, 0.5, 1);
 	}
 
 	Material material = m_materials[closestIndex];
