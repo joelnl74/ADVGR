@@ -205,6 +205,11 @@ float3 RenderCore::Trace(Ray ray)
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 {
+	CorePointLight light = pointLight;
+
+	float3 dir = normalize(light.position - origin);
+	Ray shadowRay = Ray(origin, dir);
+
 	return make_float3(1, 1, 1);
 }
 
