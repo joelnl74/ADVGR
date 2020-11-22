@@ -261,7 +261,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 	return make_float3(angle, angle, angle);
 }
 
-float3 lh2core::RenderCore::Reflect(float3& in, float3 normal)
+float3 RenderCore::Reflect(float3& in, float3 normal)
 {
 	return normalize(in - 2 * dot(in, normal) * normal);
 }
