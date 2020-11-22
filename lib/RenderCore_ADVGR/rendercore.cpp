@@ -43,9 +43,9 @@ void RenderCore::Init()
 	spheres.push_back(sphere2);
 	spheres.push_back(sphere3);
 
-	Material material(0, make_float3(255, 0, 0), 0.9);
-	Material material1(1, make_float3(255, 255, 0), 0.8);
-	Material material2(2, make_float3(255, 0, 255), 0.7);
+	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 0, 0), 0.9);
+	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.8);
+	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.7);
 
 	m_materials.push_back(material);
 	m_materials.push_back(material1);
@@ -63,8 +63,8 @@ void RenderCore::Init()
 	triangle2.point2 = make_float3(50, -0.4, 50);
 	triangle2.point3 = make_float3(-50, -0.4, 50);
 
-	Material material3(3, make_float3(0, 255, 0), 0.9);
-	Material material4(4, make_float3(0, 255, 0), 0.9);
+	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
+	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
 
 	m_materials.push_back(material3);
 	m_materials.push_back(material4);
@@ -154,7 +154,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-float3 lh2core::RenderCore::Trace(Ray ray)
+float3 RenderCore::Trace(Ray ray)
 {
 	int closestIndex = 0;
 
@@ -188,15 +188,24 @@ float3 lh2core::RenderCore::Trace(Ray ray)
 		return make_float3(0, 70, 125);
 	}
 
-	float3 origin = ray.m_Direction * t_min + ray.m_Origin;
 	Material material = m_materials[closestIndex];
+
+	if (material.m_materialType == MaterialTypes::DIFFUSE)
+	{
+		float3 intersectionPoint = ray.m_Direction * t_min + ray.m_Origin;
+
+		//TODO get the normal vector.
+		float3 m_diffuseColor = material.m_diffuse * material.m_color * DirectIllumination(intersectionPoint, make_float3(0, 0, 0));
+
+		return m_diffuseColor;
+	}
 
 	return material.m_color;
 }
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 {
-	return float3();
+	return make_float3(1, 1, 1);
 }
 
 void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
