@@ -45,7 +45,7 @@ void RenderCore::Init()
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
-	Material material(0, MaterialTypes::MIRROR, make_float3(1, 0, 0), 1);
+	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 0, 0), 0.8);
 	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.7);
 	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.6);
 
@@ -136,7 +136,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
 
-			screenData[x + y * SCRWIDTH] = Trace(ray, 0);
+			screenData[x + y * SCRWIDTH] = Trace(ray);
 		}
 	}
 
@@ -191,7 +191,7 @@ tuple<int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 	return make_tuple(closestIndex, t_min, isTriangle);
 }
 
-float3 RenderCore::Trace(Ray ray, int depth)
+float3 RenderCore::Trace(Ray ray)
 {
 	tuple intersect = Intersect(ray);
 
@@ -207,9 +207,6 @@ float3 RenderCore::Trace(Ray ray, int depth)
 	float3 normalVector;
 	Material material = m_materials[closestIndex];
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
-
-	if (depth > maxDepth)
-		return material.m_color;
 	
 	if (isTriangle)
 	{
@@ -219,12 +216,11 @@ float3 RenderCore::Trace(Ray ray, int depth)
 	{
 		// Look up how we calculate sphere normals.
 		intersectionPoint = normalize(intersectionPoint);
-		normalVector = intersectionPoint - spheres[closestIndex].m_CenterPosition;
+		normalVector = spheres[closestIndex].m_CenterPosition - intersectionPoint;
 	}
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-
 		float3 m_diffuseColor = material.m_diffuse * material.m_color * DirectIllumination(intersectionPoint, normalVector);
 
 		return m_diffuseColor;
@@ -235,14 +231,7 @@ float3 RenderCore::Trace(Ray ray, int depth)
 	}
 	else if (material.m_materialType == MaterialTypes::MIRROR)
 	{
-		Ray reflected;
-		reflected.m_Origin = intersectionPoint;
-		reflected.m_Direction = Reflect(ray.m_Direction, normalVector);
-		
-		float3 m_reflectedColor = material.m_color;
-		m_reflectedColor *= Trace(reflected, depth + 1);
-
-		return m_reflectedColor;
+		return material.m_color;
 	}
 
 	return material.m_color;
