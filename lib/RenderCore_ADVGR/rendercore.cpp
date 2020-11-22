@@ -27,7 +27,7 @@ void RenderCore::Init()
 	Sphere sphere;
 	sphere.index = 0;
 	sphere.materialIndex = 0;
-	sphere.m_CenterPosition = make_float3(-0.2, -0.2, 1.6);
+	sphere.m_CenterPosition = make_float3(-0.2, -0.2, 1.8);
 	sphere.m_Radius = 0.2;
 	spheres.push_back(sphere);
 
@@ -41,7 +41,7 @@ void RenderCore::Init()
 	Sphere sphere3;
 	sphere3.index = 2;
 	sphere3.materialIndex = 2;
-	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 1.8);
+	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 2.2);
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
