@@ -69,8 +69,8 @@ void RenderCore::Init()
 	triangle2.point3 = make_float3(-50, -0.4, 50);
 	triangles.push_back(triangle2);
 
-	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0);
-	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0);
+	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
+	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.9);
 
 	m_materials.push_back(material3);
 	m_materials.push_back(material4);
@@ -157,9 +157,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-tuple<int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
+tuple<int, int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 {
 	int closestIndex = 0;
+	int materialIndex = 0;
 
 	float t_min = numeric_limits<float>::max();
 	bool isTriangle = false;
@@ -172,6 +173,7 @@ tuple<int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 		{
 			t_min = t;
 			closestIndex = triangle.index;
+			materialIndex = triangle.materialIndex;
 			isTriangle = true;
 		}
 	}
@@ -184,11 +186,12 @@ tuple<int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 		{
 			t_min = t;
 			closestIndex = sphere.index;
+			materialIndex = sphere.materialIndex;
 			isTriangle = false;
 		}
 	}
 
-	return make_tuple(closestIndex, t_min, isTriangle);
+	return make_tuple(closestIndex, materialIndex, t_min, isTriangle);
 }
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
@@ -196,34 +199,28 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	tuple intersect = Intersect(ray);
 
 	int closestIndex = get<0>(intersect);
-	float t_min = get<1>(intersect);
-	bool isTriangle = get<2>(intersect);
+	int materialIndex = get<1>(intersect);
+	float t_min = get<2>(intersect);
+	bool isTriangle = get<3>(intersect);
 
 	if (t_min == numeric_limits<float>::max())
 	{
 		return make_float3(0, 0.5, 1);
 	}
-	Material material = m_materials[closestIndex];
+	Material material = m_materials[materialIndex];
 
 	float3 color = material.m_color;
 	float3 normalVector;
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
 	if (depth > maxDepth)
+	{
 		return material.m_color;
+	}
 	
 	if (isTriangle)
 	{
 		normalVector = cross(triangles[closestIndex].point1, triangles[closestIndex].point2);
-
-		if (x + y % 2 == 0) 
-		{
-			color = make_float3(1, 1, 0);
-		}
-		else 
-		{
-			color = make_float3(1, 1, 1);
-		}
 	}
 	else
 	{
@@ -266,7 +263,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 
 	tuple intersect = Intersect(shadowRay);
 
-	float t_min = get<1>(intersect);
+	float t_min = get<2>(intersect);
 
 	if (t_min != numeric_limits<float>::max())
 	{
