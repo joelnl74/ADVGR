@@ -239,7 +239,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 
 	float t_min = get<1>(intersect);
 
-	if (t_min == numeric_limits<float>::max())
+	if (t_min != numeric_limits<float>::max())
 	{
 		return make_float3(0.0f, 0.0f, 0.0f);
 	}
