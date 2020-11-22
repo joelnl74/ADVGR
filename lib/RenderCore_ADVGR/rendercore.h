@@ -87,6 +87,9 @@ public:
 	vector<Triangle> triangles;
 	vector<Material> m_materials;
 
+	bool swapColor = false;
+	float3 checkerBoardColor = make_float3(1, 1, 1);
+
 	CorePointLight pointLight;
 	int maxDepth = 3;
 
