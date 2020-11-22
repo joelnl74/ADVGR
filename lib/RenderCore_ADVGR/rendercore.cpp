@@ -69,8 +69,8 @@ void RenderCore::Init()
 	triangle2.point3 = make_float3(-50, -0.4, 50);
 	triangles.push_back(triangle2);
 
-	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.1);
-	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.1);
+	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.0);
+	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.0);
 
 	m_materials.push_back(material3);
 	m_materials.push_back(material4);
