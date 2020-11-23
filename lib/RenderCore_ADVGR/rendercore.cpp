@@ -177,9 +177,12 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		return m_reflectedColor;
 	}
+	else if (material->pbrtMaterialType == MaterialType::PBRT_GLASS)
+	{
+		return color;
+	}
 
 	return color;
-
 }
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
