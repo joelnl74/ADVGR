@@ -249,9 +249,9 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		mat.specular.value = 0.4f;
 		mat.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
-		if (color.x == color.y && color.y == color.z)
+		if (color.x == color.y && color.y == color.z && mat.color.textureID == -1)
 		{
-			// mat->pbrtMaterialType = MaterialType::PBRT_MIRROR;
+			mat.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
 
 		materials.push_back(mat);
