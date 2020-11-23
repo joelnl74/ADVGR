@@ -109,9 +109,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 tuple<CoreTri*, float> lh2core::RenderCore::Intersect(Ray ray)
 {
-	int closestIndex = 0;
-	int materialIndex = 0;
-
 	float t_min = numeric_limits<float>::max();
 	CoreTri* tri;
 
