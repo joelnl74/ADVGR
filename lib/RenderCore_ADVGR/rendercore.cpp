@@ -24,56 +24,6 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
-	Sphere sphere;
-	sphere.index = 0;
-	sphere.materialIndex = 0;
-	sphere.m_CenterPosition = make_float3(-0.6, -0.2, 1.6);
-	sphere.m_Radius = 0.2;
-	spheres.push_back(sphere);
-
-	Sphere sphere2;
-	sphere2.index = 1;
-	sphere2.materialIndex = 1;
-	sphere2.m_CenterPosition = make_float3(0.0, -0.2, 1.6);
-	sphere2.m_Radius = 0.2;
-	spheres.push_back(sphere2);
-
-	Sphere sphere3;
-	sphere3.index = 2;
-	sphere3.materialIndex = 2;
-	sphere3.m_CenterPosition = make_float3(0.6, -0.2, 1.6);
-	sphere3.m_Radius = 0.2;
-	spheres.push_back(sphere3);
-
-	Material material(0, MaterialTypes::MIRROR, make_float3(1, 1, 1), 1);
-	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.5);
-	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.4);
-
-	m_materials.push_back(material);
-	m_materials.push_back(material1);
-	m_materials.push_back(material2);
-
-	Triangle triangle;
-	triangle.index = 0;
-	triangle.materialIndex = 3;
-	triangle.point1 = make_float3(-50, -0.4, -50);
-	triangle.point2 = make_float3(50, -0.4, -50);
-	triangle.point3 = make_float3(-50, -0.4, 50);
-	triangles.push_back(triangle);
-
-	Triangle triangle2;
-	triangle2.index = 1;
-	triangle2.materialIndex = 4;
-	triangle2.point1 = make_float3(50, -0.4, -50);
-	triangle2.point2 = make_float3(50, -0.4, 50);
-	triangle2.point3 = make_float3(-50, -0.4, 50);
-	triangles.push_back(triangle2);
-
-	Material material3(3, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.5);
-	Material material4(4, MaterialTypes::DIFFUSE, make_float3(0, 1, 0), 0.5);
-
-	m_materials.push_back(material3);
-	m_materials.push_back(material4);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -100,11 +50,11 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	// the original data after we leave this function.
 	newMesh.vertices = new float4[vertexCount];
 	newMesh.vcount = vertexCount;
-	memcpy( newMesh.vertices, vertexData, vertexCount * sizeof( float4 ) );
+	memcpy(newMesh.vertices, vertexData, vertexCount * sizeof(float4));
 	// copy the supplied 'fat triangles'
 	newMesh.triangles = new CoreTri[vertexCount / 3];
-	memcpy( newMesh.triangles, triangleData, (vertexCount / 3) * sizeof( CoreTri ) );
-	meshes.push_back( newMesh );
+	memcpy(newMesh.triangles, triangleData, (vertexCount / 3) * sizeof(CoreTri));
+	meshes.push_back(newMesh);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -117,8 +67,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 	float dx = 1.0f / (SCRWIDTH - 1);
 	float dy = 1.0f / (SCRHEIGHT - 1);
-
-	swapColor = false;
 
 	// render
 	for (int y = 0; y < SCRHEIGHT; y++)
@@ -159,59 +107,52 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-tuple<int, int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
+tuple<CoreTri*, float> lh2core::RenderCore::Intersect(Ray ray)
 {
 	int closestIndex = 0;
 	int materialIndex = 0;
 
 	float t_min = numeric_limits<float>::max();
-	bool isTriangle = true;
+	CoreTri* tri;
 
-	for (Triangle& triangle : triangles) {
-
-		float t = Utils::IntersectTriangle(ray, triangle.point1, triangle.point2, triangle.point3);
-
-		if (t < t_min)
-		{
-			t_min = t;
-			closestIndex = triangle.index;
-			materialIndex = triangle.materialIndex;
-			isTriangle = true;
+	for (Mesh& mesh : meshes) {
+		for (int i = 0; i < mesh.vcount / 3; i++) {
+			
+			float t = Utils::IntersectTriangle(ray, mesh.triangles[i].vertex0, mesh.triangles[i].vertex1, mesh.triangles[i].vertex2);
+			
+			if (t < t_min)
+			{
+				t_min = t;
+				tri = &mesh.triangles[i];
+			}
 		}
 	}
 
-	for (Sphere& sphere : spheres) {
-
-		float t = Utils::IntersectSphere(ray, sphere);
-
-		if (t < t_min)
-		{
-			t_min = t;
-			closestIndex = sphere.index;
-			materialIndex = sphere.materialIndex;
-			isTriangle = false;
-		}
-	}
-
-	return make_tuple(closestIndex, materialIndex, t_min, isTriangle);
+	return make_tuple(tri, t_min);
 }
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 {
 	tuple intersect = Intersect(ray);
 
-	int closestIndex = get<0>(intersect);
-	int materialIndex = get<1>(intersect);
-	float t_min = get<2>(intersect);
-	bool isTriangle = get<3>(intersect);
+	float t_min = get<1>(intersect);
 
 	if (t_min == numeric_limits<float>::max())
 	{
-		return make_float3(0, 0.5, 1);
+		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
+		float v = acosf(ray.m_Direction.y) * INVPI;
+
+		int xPixel = float(skyWidth) * 0.5 * u;
+		int yPixel = float(skyHeight) * v;
+		int pixelIdx = yPixel * skyWidth + xPixel;
+
+		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
 
-	Material material = m_materials[materialIndex];
-	float3 color = material.m_color;
+	CoreTri* triangle = get<0>(intersect);
+
+	CoreMaterial *material = materials[triangle->material];
+	float3 color = make_float3(material->color.value.x, material->color.value.y, material->color.value.z);
 	float3 normalVector;
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 	
@@ -219,52 +160,23 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	{
 		return color;
 	}
+
+	normalVector = cross(triangle->vertex0, triangle->vertex1);
+
+	if (material->pbrtMaterialType == MaterialType::PBRT_MATTE)
+	{
+		float diffuse = 1.0 - material->specular.value;
+
+		float3 m_diffuseColor = diffuse * color * DirectIllumination(intersectionPoint, 0.5 * make_float3(normalVector.x + 1, normalVector.y + 1, normalVector.z + 1));
 	
-	if ((y + x) % 16 == 0)
-	{
-		if (swapColor == false)
-		{
-			checkerBoardColor = make_float3(1, 1, 0);
-			swapColor = true;
-		}
-		else
-		{
-			checkerBoardColor = make_float3(1, 1, 1);
-			swapColor = false;
-		}
-	}
-
-	if (isTriangle)
-	{
-		normalVector = cross(triangles[closestIndex].point1, triangles[closestIndex].point2);
-
-		color = checkerBoardColor;
-	}
-	else
-	{
-		// Look up how we calculate sphere normals.
-		// intersectionPoint = normalize(intersectionPoint);
-		normalVector = normalize(intersectionPoint - spheres[closestIndex].m_CenterPosition);
-	}
-
-	if (material.m_materialType == MaterialTypes::DIFFUSE)
-	{
-		float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, 0.5 * make_float3(normalVector.x + 1, normalVector.y + 1, normalVector.z + 1));
-		// float3 m_diffuseColor = material.m_diffuse * color;
-		// float3 m_diffuseColor = 0.5 * make_float3(normalVector.x+1, normalVector.y+1, normalVector.z+1);
-
 		return m_diffuseColor;
 	}
-	else if (material.m_materialType == MaterialTypes::GLASS)
-	{
-		return color;
-	}
-	else if (material.m_materialType == MaterialTypes::MIRROR)
+	else if (material->pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
 		Ray reflected;
 		reflected.m_Origin = intersectionPoint;
 		reflected.m_Direction = Reflect(ray.m_Direction, normalVector);
-		
+
 		float3 m_reflectedColor = color;
 		m_reflectedColor *= Trace(reflected, depth + 1);
 
@@ -272,6 +184,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	}
 
 	return color;
+
 }
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
@@ -283,7 +196,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 
 	tuple intersect = Intersect(shadowRay);
 
-	float t_min = get<2>(intersect);
+	float t_min = get<1>(intersect);
 
 
 	if (t_min != numeric_limits<float>::max())
@@ -306,16 +219,29 @@ float3 RenderCore::Reflect(float3& in, float3 normal)
 
 void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 {
-	if (materialCount == materials.size())
+	if (materials.size() == materialCount)
 	{
 		return;
 	}
 
-	for (int i = 0; i < materialCount; i++)
-	{
-		float3 color = make_float3(material[i].color.value.x * 255.0, material[i].color.value.y * 255.0, material[i].color.value.z * 255.0);
+	// copy the supplied array of materials
+	for (int i = 0; i < materialCount; i++) {
+		CoreMaterial* mat = new CoreMaterial();
 
-		materials.emplace(i, color);
+		float3 color = make_float3(material[i].color.value.x, material[i].color.value.y, material[i].color.value.z);
+		mat->color.value.x = color.x;
+		mat->color.value.y = color.y;
+		mat->color.value.z = color.z;
+
+		mat->specular.value = 0.4f;
+		mat->pbrtMaterialType = MaterialType::PBRT_MATTE;
+
+		if (color.x == color.y && color.y == color.z)
+		{
+			mat->pbrtMaterialType = MaterialType::PBRT_MIRROR;
+		}
+
+		materials.push_back(mat);
 	}
 }
 
@@ -336,6 +262,16 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 		pointLight.energy = pointLights[i].energy;
 		pointLight.radiance = pointLights[i].radiance;
 	}
+}
+
+void lh2core::RenderCore::SetSkyData(const float3* pixels, const uint width, const uint height, const mat4& worldToLight)
+{
+	skyData.clear();
+	skyData.resize(width * height);
+	memcpy(&skyData[0], pixels, sizeof(float3) * width * height);
+
+	skyWidth = width;
+	skyHeight = height;
 }
 
 //  +-----------------------------------------------------------------------------+

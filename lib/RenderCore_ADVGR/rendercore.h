@@ -17,7 +17,6 @@
 #include "Ray.h"
 #include "Sphere.h"
 #include "Triangle.h"
-#include "Material.h"
 #include "rendersystem.h"
 
 namespace lh2core
@@ -52,12 +51,13 @@ public:
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount);
+	void SetSkyData(const float3* pixels, const uint width, const uint height, const mat4& worldToLight);
 	CoreStats GetCoreStats() const override;
 	void Shutdown();
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	tuple<int, int, float, bool> Intersect(Ray ray);
+	tuple<CoreTri*, float> Intersect(Ray ray);
 	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
 	float3 DirectIllumination(float3& origin, float3& normal);
 	float3 Reflect(float3& in, float3 normal);
@@ -67,7 +67,6 @@ public:
 	inline void Setting( const char* name, float value ) override {}
 	inline void SetTextures( const CoreTexDesc* tex, const int textureCount ) override {}
 
-	inline void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight ) override {}
 	inline void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) override {}
 	inline void FinalizeInstances() override {}
 
@@ -83,17 +82,13 @@ public:
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 
-	vector<Sphere> spheres;
-	vector<Triangle> triangles;
-	vector<Material> m_materials;
+	vector<float3> skyData;
+	int skyWidth, skyHeight;
 
-	bool swapColor = false;
-	float3 checkerBoardColor = make_float3(1, 1, 1);
+	vector<CoreMaterial*> materials;           // material data storage
 
 	CorePointLight pointLight;
 	int maxDepth = 3;
-
-	map<int, float3> materials;
 };
 
 } // namespace lh2core
