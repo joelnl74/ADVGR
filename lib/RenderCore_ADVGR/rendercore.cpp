@@ -148,25 +148,41 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	CoreTri* triangle = get<0>(intersect);
 
-	CoreMaterial *material = materials[triangle->material];
-	float3 color = make_float3(material->color.value.x, material->color.value.y, material->color.value.z);
+	CoreMaterial material = materials[triangle->material];
+	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
 	float3 normalVector = make_float3(triangle->Nx, triangle->Ny, triangle->Nz);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
+
+	if (material.color.textureID > -1)
+	{
+		auto& texture = textures[material.color.textureID];
+
+		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
+		float v = acosf(ray.m_Direction.y) * INVPI;
+
+		int xPixel = float(texture.width) * 0.5 * u;
+		int yPixel = float(texture.height) * v;
+		int pixelIdx = yPixel * texture.width + xPixel;
+
+		auto temp = texture.idata[pixelIdx];
+
+		color = make_float3(temp.x, temp.y, temp.z);
+	}
 	
 	if (depth > maxDepth)
 	{
 		return color;
 	}
 
-	if (material->pbrtMaterialType == MaterialType::PBRT_MATTE)
+	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		float diffuse = 1.0 - material->specular.value;
+		float diffuse = 1.0 - material.specular.value;
 
 		float3 m_diffuseColor = diffuse * color * DirectIllumination(intersectionPoint, 0.5 * make_float3(normalVector.x + 1, normalVector.y + 1, normalVector.z + 1));
 	
 		return m_diffuseColor;
 	}
-	else if (material->pbrtMaterialType == MaterialType::PBRT_MIRROR)
+	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
 		Ray reflected;
 		reflected.m_Origin = intersectionPoint;
@@ -177,7 +193,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		return m_reflectedColor;
 	}
-	else if (material->pbrtMaterialType == MaterialType::PBRT_GLASS)
+	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
 		return color;
 	}
@@ -217,26 +233,25 @@ float3 RenderCore::Reflect(float3& in, float3 normal)
 
 void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 {
-	if (materials.size() == materialCount)
-	{
-		return;
-	}
+	materials.clear();
 
 	// copy the supplied array of materials
 	for (int i = 0; i < materialCount; i++) {
-		CoreMaterial* mat = new CoreMaterial();
+		CoreMaterial mat;
 
 		float3 color = make_float3(material[i].color.value.x, material[i].color.value.y, material[i].color.value.z);
-		mat->color.value.x = color.x;
-		mat->color.value.y = color.y;
-		mat->color.value.z = color.z;
+		mat.color.value.x = color.x;
+		mat.color.value.y = color.y;
+		mat.color.value.z = color.z;
 
-		mat->specular.value = 0.4f;
-		mat->pbrtMaterialType = MaterialType::PBRT_MATTE;
+		mat.color.textureID = material[i].color.textureID;
+
+		mat.specular.value = 0.4f;
+		mat.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 		if (color.x == color.y && color.y == color.z)
 		{
-			mat->pbrtMaterialType = MaterialType::PBRT_MIRROR;
+			// mat->pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
 
 		materials.push_back(mat);
@@ -270,6 +285,27 @@ void lh2core::RenderCore::SetSkyData(const float3* pixels, const uint width, con
 
 	skyWidth = width;
 	skyHeight = height;
+}
+
+void lh2core::RenderCore::SetTextures(const CoreTexDesc* tex, const int textureCount)
+{
+	textures.clear();
+
+	for (int i = 0; i < textureCount; i++)
+	{
+		CoreTexDesc texture;
+		texture.fdata = tex[i].fdata;
+		texture.firstPixel = tex[i].firstPixel;
+		texture.flags = tex[i].flags;
+		texture.height = tex[i].height;
+		texture.idata = tex[i].idata;
+		texture.MIPlevels = tex[i].MIPlevels;
+		texture.pixelCount = tex[i].pixelCount;
+		texture.storage = tex[i].storage;
+		texture.width = tex[i].width;
+
+		textures.push_back(texture);
+	}
 }
 
 //  +-----------------------------------------------------------------------------+

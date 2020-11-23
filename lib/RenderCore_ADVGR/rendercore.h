@@ -50,6 +50,7 @@ public:
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount);
 	void SetSkyData(const float3* pixels, const uint width, const uint height, const mat4& worldToLight);
+	void SetTextures(const CoreTexDesc* tex, const int textureCount);
 	CoreStats GetCoreStats() const override;
 	void Shutdown();
 
@@ -63,7 +64,6 @@ public:
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
 	inline void Setting( const char* name, float value ) override {}
-	inline void SetTextures( const CoreTexDesc* tex, const int textureCount ) override {}
 
 	inline void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) override {}
 	inline void FinalizeInstances() override {}
@@ -83,7 +83,8 @@ public:
 	vector<float3> skyData;
 	int skyWidth, skyHeight;
 
-	vector<CoreMaterial*> materials;           // material data storage
+	vector<CoreMaterial> materials;           // material data storage
+	vector<CoreTexDesc> textures;           // texture data storage
 
 	CorePointLight pointLight;
 	int maxDepth = 3;

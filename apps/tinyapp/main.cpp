@@ -41,7 +41,7 @@ void PrepareScene()
 	auto scene = renderer->GetScene();
 	auto sky = new HostSkyDome();
 
-	sky->Load("../_shareddata/sky_15.hdr");
+	sky->Load("../_shareddata/kloppenheim_02_4k.hdr");
 
 	// Compensate for different evaluation in PBRT
 	sky->worldToLight = mat4::RotateX(-PI / 2);
