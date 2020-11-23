@@ -14,7 +14,6 @@ public:
         float3 Q = C - t * ray.m_Direction;
         float p2 = dot(Q, Q);
         float r2 = sphere.m_Radius * sphere.m_Radius;
-
         if (p2 > (r2))
         {
             return numeric_limits<float>::max();
@@ -22,7 +21,7 @@ public:
 
         t -= sqrt(r2 - p2);
 
-        if (t > 0)
+        if (t > 0.001)
         {
             return t;
         }

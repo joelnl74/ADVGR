@@ -27,26 +27,26 @@ void RenderCore::Init()
 	Sphere sphere;
 	sphere.index = 0;
 	sphere.materialIndex = 0;
-	sphere.m_CenterPosition = make_float3(0.4, -0.2, 1.4);
+	sphere.m_CenterPosition = make_float3(-0.6, -0.2, 1.6);
 	sphere.m_Radius = 0.2;
 	spheres.push_back(sphere);
 
 	Sphere sphere2;
 	sphere2.index = 1;
 	sphere2.materialIndex = 1;
-	sphere2.m_CenterPosition = make_float3(-0.2, -0.2, 1.8);
+	sphere2.m_CenterPosition = make_float3(0.0, -0.2, 1.6);
 	sphere2.m_Radius = 0.2;
 	spheres.push_back(sphere2);
 
 	Sphere sphere3;
 	sphere3.index = 2;
 	sphere3.materialIndex = 2;
-	sphere3.m_CenterPosition = make_float3(0.0, -0.2, 2.2);
+	sphere3.m_CenterPosition = make_float3(0.6, -0.2, 1.6);
 	sphere3.m_Radius = 0.2;
 	spheres.push_back(sphere3);
 
-	Material material(0, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.6);
-	Material material1(1, MaterialTypes::MIRROR, make_float3(1, 1, 1), 0.5);
+	Material material(0, MaterialTypes::MIRROR, make_float3(1, 1, 1), 1);
+	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.5);
 	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.4);
 
 	m_materials.push_back(material);
@@ -134,6 +134,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			// direction
 			float3 direction = normalize(point - view.pos);
 
+			ray.t = INT_MAX;
 			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
 
@@ -242,13 +243,15 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	else
 	{
 		// Look up how we calculate sphere normals.
-		intersectionPoint = normalize(intersectionPoint);
+		// intersectionPoint = normalize(intersectionPoint);
 		normalVector = normalize(intersectionPoint - spheres[closestIndex].m_CenterPosition);
 	}
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-		float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, normalVector);
+		float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, 0.5 * make_float3(normalVector.x + 1, normalVector.y + 1, normalVector.z + 1));
+		// float3 m_diffuseColor = material.m_diffuse * color;
+		// float3 m_diffuseColor = 0.5 * make_float3(normalVector.x+1, normalVector.y+1, normalVector.z+1);
 
 		return m_diffuseColor;
 	}
@@ -281,6 +284,7 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 	tuple intersect = Intersect(shadowRay);
 
 	float t_min = get<2>(intersect);
+
 
 	if (t_min != numeric_limits<float>::max())
 	{
