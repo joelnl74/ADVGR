@@ -157,11 +157,19 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	{
 		auto& texture = textures[material.color.textureID];
 
-		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
-		float v = acosf(ray.m_Direction.y) * INVPI;
+		float3 p0 = intersectionPoint - triangle->vertex0;
+		float3 p1 = intersectionPoint - triangle->vertex1;
+		float3 p2 = intersectionPoint - triangle->vertex2;
 
-		int xPixel = float(texture.width) * 0.5 * u;
-		int yPixel = float(texture.height) * v;
+		float a = length(cross(p0 - p1, p1 - p2)); // main triangle area a
+		float a1= length(cross(p1, p2)) / a; // p1's triangle area / a
+		float a2 = length(cross(p2, p0)) / a; // p2's triangle area / a 
+		float a3 = length(cross(p0, p1)) / a; // p3's triangle area / a
+
+		float2 uv = make_float2(a1, a2);
+
+		int xPixel = float(texture.width) * uv.x;
+		int yPixel = float(texture.height) * uv.y;
 		int pixelIdx = yPixel * texture.width + xPixel;
 
 		auto temp = texture.idata[pixelIdx];
