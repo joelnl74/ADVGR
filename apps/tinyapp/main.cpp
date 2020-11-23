@@ -34,9 +34,18 @@ static std::bitset<1024> keystates;
 void PrepareScene()
 {
 	// initialize scene
-	int boxScene = renderer->AddMesh( "../_shareddata/basic_box.obj", 0.1f);
+	int boxScene = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.05f);
 	renderer->AddInstance(boxScene);
-	renderer->AddPointLight(make_float3(0, 20, 0), 50 * make_float3(10, 10, 10));
+	renderer->AddPointLight(make_float3(0, 19, 0), 50 * make_float3(10, 10, 10));
+
+	auto scene = renderer->GetScene();
+	auto sky = new HostSkyDome();
+
+	sky->Load("../_shareddata/sky_15.hdr");
+
+	// Compensate for different evaluation in PBRT
+	sky->worldToLight = mat4::RotateX(-PI / 2);
+	scene->SetSkyDome(sky);
 }
 
 //  +-----------------------------------------------------------------------------+
