@@ -15,8 +15,6 @@
 
 #pragma once
 #include "Ray.h"
-#include "Sphere.h"
-#include "Triangle.h"
 #include "rendersystem.h"
 
 namespace lh2core
