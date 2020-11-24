@@ -162,14 +162,16 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		float3 p2 = intersectionPoint - triangle->vertex2;
 
 		float a = length(cross(p0 - p1, p0 - p2)); // main triangle area a
-		float u= length(cross(p1, p2)) / a; // p1's triangle area / a
+		float u = length(cross(p1, p2)) / a; // p1's triangle area / a
 		float v = length(cross(p2, p0)) / a; // p2's triangle area / a 
 		float w = length(cross(p0, p1)) / a; // p2's triangle area / a 
 
-		float2 uv = make_float2(u, w);
 
-		int xPixel = float(texture.width) * uv.x;
-		int yPixel = float(texture.height) * uv.y;
+		float uu = triangle->u0 * u + triangle->u1 * v + triangle->u2 * w;
+		float vv = triangle->v0 * u + triangle->v1 * v + triangle->v2 * w;
+
+		int xPixel = float(texture.width) * uu;
+		int yPixel = float(texture.height) * vv;
 		int pixelIdx = yPixel + xPixel * texture.width;
 
 		auto temp = texture.idata[pixelIdx];
