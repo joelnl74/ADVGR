@@ -191,7 +191,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		return DirectIllumination(intersectionPoint, normalVector, color);
+		return CalculateLightContribution(intersectionPoint, normalVector, color);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -212,7 +212,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	return color;
 }
 
-float3 RenderCore::DirectIllumination(float3& origin, float3& normal, float3& m_color)
+float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color)
 {
 	float3 color = make_float3(0, 0, 0);
 
@@ -222,23 +222,27 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal, float3& m_
 
 		float3 direction = normalize(light.position - origin);
 
-		Ray shadowRay = Ray(origin, direction);
-
-		tuple intersect = Intersect(shadowRay);
-
-		float t_min = get<1>(intersect);
-
-		if (t_min != numeric_limits<float>::max())
+		if (dot(normal, direction) > 0.0f) 
 		{
-			continue;
+			Ray shadowRay = Ray(origin, direction);
+
+			tuple intersect = Intersect(shadowRay);
+
+			float t_min = get<1>(intersect);
+
+			if (t_min != numeric_limits<float>::max())
+			{
+				continue;
+			}
+
+			float distToLight = length(direction);
+
+			float3 scaledIntensity = light.radiance * (1.0f / (distToLight * distToLight));
+
+			// Lambertian Shading
+			color += m_color * scaledIntensity * dot(normal, direction);
 		}
 
-		float distToLight = length(direction);
-
-		float3 scaledIntensity = light.radiance * (1.0f / (distToLight * distToLight));
-		
-		// Lambertian Shading
-		color += m_color * scaledIntensity * dot(normal, direction); 
 	}
 
 
