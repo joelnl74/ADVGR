@@ -34,7 +34,7 @@ void RenderCore::Init()
 	Sphere sphere2;
 	sphere2.index = 1;
 	sphere2.materialIndex = 1;
-	sphere2.m_CenterPosition = make_float3(0.0, -0.2, 1.6);
+	sphere2.m_CenterPosition = make_float3(0.0, 0.0, 1.6);
 	sphere2.m_Radius = 0.2;
 	spheres.push_back(sphere2);
 
@@ -46,7 +46,7 @@ void RenderCore::Init()
 	spheres.push_back(sphere3);
 
 	Material material(0, MaterialTypes::MIRROR, make_float3(1, 1, 1), 1);
-	Material material1(1, MaterialTypes::DIFFUSE, make_float3(1, 1, 0), 0.5);
+	Material material1(1, MaterialTypes::GLASS, make_float3(1, 1, 0), 0.5);
 	Material material2(2, MaterialTypes::DIFFUSE, make_float3(1, 0, 1), 0.4);
 
 	m_materials.push_back(material);
@@ -257,7 +257,18 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	}
 	else if (material.m_materialType == MaterialTypes::GLASS)
 	{
-		return color;
+		float ior = 1.5;
+		float3 m_transmissionColor = color;
+		float3 m_transmissionDirection;
+		float3 negativeResult = make_float3(0, 0, 0);
+		m_transmissionDirection = Refract(intersectionPoint, normalVector, ior);
+
+		Ray transmission;
+		transmission.m_Origin = intersectionPoint;
+		transmission.m_Direction = normalize(m_transmissionDirection);
+		m_transmissionColor = Trace(transmission, depth + 1);
+
+		return m_transmissionColor;
 	}
 	else if (material.m_materialType == MaterialTypes::MIRROR)
 	{
@@ -272,6 +283,31 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	}
 
 	return color;
+}
+
+float3 RenderCore::Refract(float3& in, float3& normal, float ior)
+{
+	float3 n = normal;
+	float theta1 = dot(in, normal);
+	float cosi = clamp(-1.0, 1.0, dot(in, normal));
+	float n1 = 1.0; // Refraction index of air
+	float n2 = ior;
+	if (cosi < 0) {
+		// This means we are outside the surface, we want cos(theta) to be positive
+		cosi = -cosi;
+	}
+	else {
+		// This means we are inside the surface, cos(theta) is already positive but we reverse normal direction
+		n = -normal;
+		// Swap the refraction indices
+		std::swap(n1, n2);
+	}
+
+	float eta = n1 / n2;
+	float k = 1 - eta * eta * (1 - cosi * cosi);
+	float3 kNegative = make_float3(0, 0, 0);
+
+	return k < 0 ? kNegative : eta * in + (eta * cosi - sqrtf(k)) * n;
 }
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
