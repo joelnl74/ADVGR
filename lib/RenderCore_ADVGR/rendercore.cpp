@@ -291,7 +291,6 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount)
 {
-	// not supported yet
 	for (int i = 0; i < pointLightCount; i++)
 	{
 		CorePointLight pointLight{};
@@ -302,6 +301,54 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 		pointLight.radiance = pointLights[i].radiance;
 
 		m_pointLights.push_back(pointLight);
+	}
+
+	// not supported yet
+	for (int i = 0; i < spotLightCount; i++)
+	{
+		CoreSpotLight spotlight{};
+
+		spotlight.position = spotLights[i].position;
+		spotlight.dummy = spotLights[i].dummy;
+		spotlight.radiance = spotLights[i].radiance;
+		spotlight.cosOuter = spotLights[i].cosOuter;
+		spotlight.cosInner = spotLights[i].cosInner;
+		spotlight.direction = spotLights[i].direction;
+
+		m_spotLights.push_back(spotlight);
+	}
+
+	// not supported yet
+	for (int i = 0; i < directionalLightCount; i++)
+	{
+		CoreDirectionalLight directionalLight{};
+
+		directionalLight.dummy = directionalLights[i].dummy;
+		directionalLight.energy = directionalLights[i].energy;
+		directionalLight.radiance = directionalLights[i].radiance;
+		directionalLight.direction = directionalLights[i].direction;
+
+		m_directionalLight.push_back(directionalLight);
+	}
+
+	// not supported yet
+	for (int i = 0; i < triLightCount; i++)
+	{
+		CoreLightTri coreLight{};
+
+		coreLight.area = triLights[i].area;
+		coreLight.energy = triLights[i].energy;
+		coreLight.radiance = triLights[i].radiance;
+		coreLight.centre = triLights[i].centre;
+		coreLight.vertex0 = triLights[i].vertex0;
+		coreLight.vertex1 = triLights[i].vertex1;
+		coreLight.vertex2 = triLights[i].vertex2;
+		coreLight.N = triLights[i].N;
+		coreLight.dummy1 = triLights[i].dummy1;
+		coreLight.dummy2 = triLights[i].dummy2;
+		coreLight.triIdx = triLights[i].triIdx;
+
+		m_coreTriLight.push_back(coreLight);
 	}
 }
 

@@ -87,6 +87,9 @@ public:
 	vector<CoreTexDesc> textures;           // texture data storage
 
 	vector<CorePointLight> m_pointLights; // Point lights.
+	vector<CoreDirectionalLight> m_directionalLight; // Point lights.
+	vector<CoreSpotLight> m_spotLights; // Point lights.
+	vector<CoreLightTri> m_coreTriLight; // Point lights.
 
 	int maxDepth = 3;
 };
