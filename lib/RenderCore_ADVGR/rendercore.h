@@ -86,7 +86,8 @@ public:
 	vector<CoreMaterial> materials;           // material data storage
 	vector<CoreTexDesc> textures;           // texture data storage
 
-	CorePointLight pointLight;
+	vector<CorePointLight> m_pointLights; // Point lights.
+
 	int maxDepth = 3;
 };
 

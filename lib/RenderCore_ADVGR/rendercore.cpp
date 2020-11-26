@@ -216,27 +216,37 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 {
-	CorePointLight light = pointLight;
+	float3 color = make_float3(0, 0, 0);
 
-	float3 direction = normalize(light.position - origin);
-	Ray shadowRay = Ray(origin, direction);
-
-	tuple intersect = Intersect(shadowRay);
-
-	float t_min = get<1>(intersect);
-
-
-	if (t_min != numeric_limits<float>::max())
+	for (int i = 0; i < m_pointLights.size(); i++)
 	{
-		return make_float3(0.0f, 0.0f, 0.0f);
+		CorePointLight light = m_pointLights[i];
+
+		float3 direction = normalize(light.position - origin);
+		Ray shadowRay = Ray(origin, direction);
+
+		tuple intersect = Intersect(shadowRay);
+
+		float t_min = get<1>(intersect);
+
+
+		if (t_min != numeric_limits<float>::max())
+		{
+			continue;
+		}
+
+		float3 vec1 = normalize(direction - origin);
+		float3 vec2 = normalize(normal - origin);
+
+		float lightReceived = (acos(dot(vec1, vec2)) * 180 / PI) / 90;
+
+		color.x += lightReceived;
+		color.y += lightReceived;
+		color.z += lightReceived;
 	}
 
-	float3 vec1 = normalize(direction - origin);
-	float3 vec2 = normalize(normal - origin);
 
-	float angle = (acos(dot(vec1, vec2)) * 180 / PI) / 90;
-
-	return make_float3(angle, angle, angle);
+	return color;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
@@ -259,6 +269,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 		mat.color.textureID = material[i].color.textureID;
 
+		mat.specular.value = material[i].specular.value;
 		mat.specular.value = 0.4f;
 		mat.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
@@ -283,10 +294,14 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 	// not supported yet
 	for (int i = 0; i < pointLightCount; i++)
 	{
+		CorePointLight pointLight{};
+
 		pointLight.position = pointLights[i].position;
 		pointLight.dummy = pointLights[i].dummy;
 		pointLight.energy = pointLights[i].energy;
 		pointLight.radiance = pointLights[i].radiance;
+
+		m_pointLights.push_back(pointLight);
 	}
 }
 
