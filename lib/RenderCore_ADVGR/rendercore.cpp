@@ -289,12 +289,15 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		mat.color.value.z = color.z;
 
 		mat.color.textureID = material[i].color.textureID;
-
 		mat.specular.value = material[i].specular.value;
-		mat.specular.value = 0.4f;
-		mat.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
-		if (color.x == color.y && color.y == color.z && mat.color.textureID == -1)
+		if (mat.specular.value <= EPSILON)
+		{
+			mat.specular.value = i > 0 ? 0.4f : 1.0f;
+			mat.pbrtMaterialType = MaterialType::PBRT_MATTE;
+		}
+
+		if (mat.specular.value > 0.99)
 		{
 			mat.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
