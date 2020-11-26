@@ -130,6 +130,8 @@ tuple<CoreTri*, float> lh2core::RenderCore::Intersect(Ray ray)
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 {
+	constexpr float ambient_light = 0.04f;
+
 	tuple intersect = Intersect(ray);
 
 	float t_min = get<1>(intersect);
@@ -189,11 +191,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		float diffuse = 1.0 - material.specular.value;
-
-		float3 m_diffuseColor = diffuse * color * DirectIllumination(intersectionPoint, 0.5 * make_float3(normalVector.x + 1, normalVector.y + 1, normalVector.z + 1));
-	
-		return m_diffuseColor;
+		return DirectIllumination(intersectionPoint, normalVector, color);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -214,7 +212,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	return color;
 }
 
-float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
+float3 RenderCore::DirectIllumination(float3& origin, float3& normal, float3& m_color)
 {
 	float3 color = make_float3(0, 0, 0);
 
@@ -223,26 +221,24 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
 		CorePointLight light = m_pointLights[i];
 
 		float3 direction = normalize(light.position - origin);
+
 		Ray shadowRay = Ray(origin, direction);
 
 		tuple intersect = Intersect(shadowRay);
 
 		float t_min = get<1>(intersect);
 
-
 		if (t_min != numeric_limits<float>::max())
 		{
 			continue;
 		}
 
-		float3 vec1 = normalize(direction - origin);
-		float3 vec2 = normalize(normal - origin);
+		float distToLight = length(direction);
 
-		float lightReceived = (acos(dot(vec1, vec2)) * 180 / PI) / 90;
-
-		color.x += lightReceived;
-		color.y += lightReceived;
-		color.z += lightReceived;
+		float3 scaledIntensity = light.radiance * (1.0f / (distToLight * distToLight));
+		
+		// Lambertian Shading
+		color += m_color * scaledIntensity * dot(normal, direction); 
 	}
 
 

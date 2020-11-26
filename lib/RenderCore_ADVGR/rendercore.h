@@ -58,7 +58,7 @@ public:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
 	tuple<CoreTri*, float> Intersect(Ray ray);
 	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
-	float3 DirectIllumination(float3& origin, float3& normal);
+	float3 DirectIllumination(float3& origin, float3& normal, float3 &m_color);
 	float3 Reflect(float3& in, float3 normal);
 
 	// unimplemented for the minimal core
