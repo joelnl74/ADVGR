@@ -68,7 +68,7 @@ public:
 	inline void Setting( const char* name, float value ) override {}
 	inline void SetTextures( const CoreTexDesc* tex, const int textureCount ) override {}
 
-	inline void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight ) override {}
+	void SetSkyData(const float3* pixels, const uint width, const uint height, const mat4& worldToLight);
 	inline void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) override {}
 	inline void FinalizeInstances() override {}
 
@@ -87,6 +87,9 @@ public:
 	vector<Sphere> spheres;
 	vector<Triangle> triangles;
 	vector<Material> m_materials;
+
+	vector<float3> skyData;
+	int skyWidth, skyHeight;
 
 	bool swapColor = false;
 	float3 checkerBoardColor = make_float3(1, 1, 1);

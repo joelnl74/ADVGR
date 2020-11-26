@@ -196,6 +196,7 @@ tuple<int, int, float, bool> lh2core::RenderCore::Intersect(Ray ray)
 	return make_tuple(closestIndex, materialIndex, t_min, isTriangle);
 }
 
+
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 {
 	tuple intersect = Intersect(ray);
@@ -207,7 +208,14 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (t_min == numeric_limits<float>::max())
 	{
-		return make_float3(0, 0.5, 1);
+		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
+		float v = acosf(ray.m_Direction.y) * INVPI;
+
+		int xPixel = float(skyWidth) * 0.5 * u;
+		int yPixel = float(skyHeight) * v;
+		int pixelIdx = yPixel * skyWidth + xPixel;
+
+		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
 
 	Material material = m_materials[materialIndex];
@@ -353,6 +361,16 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 		materials.emplace(i, color);
 	}
+}
+
+void lh2core::RenderCore::SetSkyData(const float3* pixels, const uint width, const uint height, const mat4& worldToLight)
+{
+	skyData.clear();
+	skyData.resize(width * height);
+	memcpy(&skyData[0], pixels, sizeof(float3) * width * height);
+
+	skyWidth = width;
+	skyHeight = height;
 }
 
 //  +-----------------------------------------------------------------------------+
