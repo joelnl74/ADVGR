@@ -216,13 +216,11 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 {
 	float3 color = make_float3(0, 0, 0);
 
-	for (int i = 0; i < m_pointLights.size(); i++)
+	for (CorePointLight& light : m_pointLights)
 	{
-		CorePointLight light = m_pointLights[i];
-
 		float3 direction = normalize(light.position - origin);
 
-		if (dot(normal, direction) > 0.0f) 
+		if (dot(normal, direction) > 0.0f)
 		{
 			Ray shadowRay = Ray(origin, direction);
 
@@ -243,6 +241,29 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 			color += m_color * scaledIntensity * dot(normal, direction);
 		}
 
+	}
+
+	//Handle directional lighting.
+	for (CoreDirectionalLight &light : m_directionalLight)
+	{
+		float3 direction = light.direction;
+
+		if (dot(normal, direction) > 0.0f)
+		{
+			Ray shadowRay = Ray(origin, direction);
+			tuple intersect = Intersect(shadowRay);
+
+			float t_min = get<1>(intersect);
+
+			if (t_min != numeric_limits<float>::max())
+			{
+				continue;
+			}
+
+			// No distance for directional lights.
+			float3 normalizedDirection = normalize(direction);
+			color += m_color * light.radiance * dot(normal, normalizedDirection); //Lambertian Shading
+		}
 	}
 
 
