@@ -152,8 +152,8 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	CoreMaterial material = materials[triangle->material];
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
-	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 	float3 normalVector = make_float3(triangle->Nx, triangle->Ny, triangle->Nz);
+	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
 	if (material.color.textureID > -1)
 	{
