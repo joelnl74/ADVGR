@@ -60,6 +60,8 @@ public:
 	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color);
 	float3 Reflect(float3& in, float3 normal);
+	float3 Refract(float3& in, float3& normal, float ior);
+	float Fresnel(float3& in, float3& normal, float ior);
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
