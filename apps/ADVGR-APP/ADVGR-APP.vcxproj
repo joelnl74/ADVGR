@@ -145,7 +145,6 @@
     <ClInclude Include="..\..\lib\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\..\lib\imgui\imstb_textedit.h" />
     <ClInclude Include="..\..\lib\imgui\imstb_truetype.h" />
-    <ClInclude Include="application_ui.h" />
     <ClInclude Include="main_tools.h" />
     <ClInclude Include="UI.h" />
   </ItemGroup>
