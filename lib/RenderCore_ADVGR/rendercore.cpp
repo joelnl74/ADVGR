@@ -208,14 +208,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (t_min == numeric_limits<float>::max())
 	{
-		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
-		float v = acosf(ray.m_Direction.y) * INVPI;
-
-		int xPixel = float(skyWidth) * 0.5 * u;
-		int yPixel = float(skyHeight) * v;
-		int pixelIdx = yPixel * skyWidth + xPixel;
-
-		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
+		return make_float3(0, 0.5, 1);
 	}
 
 	Material material = m_materials[materialIndex];
@@ -344,13 +337,22 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal, float3& co
 	{
 		lambertian = 0;
 	}
-	
+
 	float specAngle = 0;
 	float specular = 0;
 
+	// Diffuse coeficient.
+	float kd = 0.8;
+	// Ambient reflection
+	float ka = 1.0f;
+	// Ambient reflection.
+	float ks = 1.0f;
+	// Ambient influence.
+	float ambient = 0.1;
+
 	if (lambertian > 0)
 	{
-		float3 R = normalize(-L - N);      // Reflected light vector
+		float3 R = reflect(-L, N);      // Reflected light vector
 		float3 V = normalize(-origin); // Vector to viewer
 
 		// Compute the specular term
@@ -361,12 +363,10 @@ float3 RenderCore::DirectIllumination(float3& origin, float3& normal, float3& co
 			specAngle = 0;
 		}
 
-		specular = pow(specAngle, 0.4);
+		specular = pow(specAngle, 75);
 	}
 
-	float3 returnedColor = 0.4 * 0.1 + 0.2 * lambertian * color + 0.3 * specular * make_float3(1, 1, 1);
-
-	return returnedColor;
+	return ka * ambient + kd * lambertian * color + ks * specular * make_float3(1, 1, 1);
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)

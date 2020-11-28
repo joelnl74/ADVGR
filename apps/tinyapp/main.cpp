@@ -36,7 +36,7 @@ void PrepareScene()
 	// initialize scene
 	int boxScene = renderer->AddMesh( "../_shareddata/basic_box.obj", 0.1f);
 	renderer->AddInstance(boxScene);
-	renderer->AddPointLight(make_float3(0, 20, 0), 50 * make_float3(10, 10, 10));
+	renderer->AddPointLight(make_float3(0, 0.5, 0), 50 * make_float3(10, 10, 10));
 }
 
 //  +-----------------------------------------------------------------------------+
