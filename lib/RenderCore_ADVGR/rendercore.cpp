@@ -191,8 +191,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		float d = 1 - material.specular.value;
-		return d * color * CalculateLightContribution(intersectionPoint, normalVector, color);
+		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -240,36 +239,65 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	return color;
 }
 
-float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color)
+float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
 {
 	float3 color = make_float3(0, 0, 0);
 	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
 
 	for (CorePointLight& light : m_pointLights)
 	{
-		float3 direction = normalize(light.position - origin);
+		float3 direction = light.position - origin;
 
-		if (dot(normal, direction) > 0.0f)
+		Ray shadowRay = Ray(origin, normalize(direction));
+
+		tuple intersect = Intersect(shadowRay);
+
+		float t_min = get<1>(intersect);
+
+		if (t_min != numeric_limits<float>::max())
 		{
-			Ray shadowRay = Ray(origin, direction);
+			return make_float3(0, 0, 0);
+		}
 
-			tuple intersect = Intersect(shadowRay);
+		float3 N = normalize(normal);
+		float3 L = normalize(light.position - origin);
 
-			float t_min = get<1>(intersect);
+		float lambertian = dot(N, L);
 
-			if (t_min != numeric_limits<float>::max())
+		if (lambertian < 0)
+		{
+			lambertian = 0;
+		}
+
+		float specAngle = 0;
+		float specular = 0;
+
+		// Diffuse coeficient.
+		float kd = 1 - material.specular.value;
+		// Ambient reflection
+		float ka = 0.4f;
+		// Ambient reflection.
+		float ks = 0.3f;
+		// Ambient influence.
+		float ambient = 0.1;
+
+		if (lambertian > 0)
+		{
+			float3 R = normalize(-L - N);      // Reflected light vector
+			float3 V = normalize(-origin); // Vector to viewer
+
+			// Compute the specular term
+			float specAngle = dot(R, V);
+
+			if (specAngle < 0)
 			{
-				continue;
+				specAngle = 0;
 			}
 
-			float3 vec1 = normalize(direction - origin);
-			float3 vec2 = normalize(normal - origin);
-		
-			float distance = length(light.position - origin);
-			float angle = (acos(dot(vec2, vec1)));
-
-			color += angle * distance * light.radiance;
+			specular = pow(specAngle, 0.4);
 		}
+
+		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
 	//Handle directional lighting.
