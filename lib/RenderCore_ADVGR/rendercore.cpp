@@ -275,15 +275,15 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		// Diffuse coeficient.
 		float kd = 1 - material.specular.value;
 		// Ambient reflection
-		float ka = 0.4f;
+		float ka = 1.0f;
 		// Ambient reflection.
-		float ks = 0.3f;
+		float ks = 0.75f;
 		// Ambient influence.
 		float ambient = 0.1;
 
 		if (lambertian > 0)
 		{
-			float3 R = normalize(-L - N);      // Reflected light vector
+			float3 R = reflect(-L, N);      // Reflected light vector
 			float3 V = normalize(-origin); // Vector to viewer
 
 			// Compute the specular term
@@ -294,37 +294,11 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 				specAngle = 0;
 			}
 
-			specular = pow(specAngle, 0.4);
+			specular = pow(specAngle, 75);
 		}
 
-		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
+		return ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
-
-	//Handle directional lighting.
-	for (CoreDirectionalLight &light : m_directionalLight)
-	{
-		float3 direction = light.direction;
-
-		if (dot(normal, direction) > 0.0f)
-		{
-			Ray shadowRay = Ray(origin, direction);
-			tuple intersect = Intersect(shadowRay);
-
-			float t_min = get<1>(intersect);
-
-			if (t_min != numeric_limits<float>::max())
-			{
-				continue;
-			}
-
-			// No distance for directional lights.
-			float3 normalizedDirection = normalize(direction);
-			color += light.radiance * dot(normal, normalizedDirection);
-		}
-	}
-
-
-	return color / lightSourceCount;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
