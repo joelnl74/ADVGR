@@ -192,7 +192,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
 		float d = 1 - material.specular.value;
-		return d * CalculateLightContribution(intersectionPoint, normalVector, color);
+		return d * color * CalculateLightContribution(intersectionPoint, normalVector, color);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -216,6 +216,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color)
 {
 	float3 color = make_float3(0, 0, 0);
+	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
 
 	for (CorePointLight& light : m_pointLights)
 	{
@@ -234,14 +235,14 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 				continue;
 			}
 
-			float distToLight = length(direction);
+			float3 vec1 = normalize(direction - origin);
+			float3 vec2 = normalize(normal - origin);
+		
+			float distance = length(light.position - origin);
+			float angle = (acos(dot(vec2, vec1)));
 
-			float3 scaledIntensity = light.radiance * (1.0f / (distToLight * distToLight));
-
-			// Lambertian Shading
-			color += m_color * scaledIntensity * dot(normal, direction);
+			color += angle * distance * light.radiance;
 		}
-
 	}
 
 	//Handle directional lighting.
@@ -263,12 +264,12 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 			// No distance for directional lights.
 			float3 normalizedDirection = normalize(direction);
-			color += m_color * light.radiance * dot(normal, normalizedDirection); //Lambertian Shading
+			color += light.radiance * dot(normal, normalizedDirection);
 		}
 	}
 
 
-	return color;
+	return color / lightSourceCount;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
