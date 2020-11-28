@@ -252,12 +252,12 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	{
 		// Look up how we calculate sphere normals.
 		// intersectionPoint = normalize(intersectionPoint);
-		normalVector = normalize(intersectionPoint - spheres[closestIndex].m_CenterPosition);
+		normalVector = intersectionPoint - spheres[closestIndex].m_CenterPosition;
 	}
 
 	if (material.m_materialType == MaterialTypes::DIFFUSE)
 	{
-		float3 m_diffuseColor = material.m_diffuse * color * DirectIllumination(intersectionPoint, 0.5 * make_float3(normalVector.x + 1, normalVector.y + 1, normalVector.z + 1));
+		float3 m_diffuseColor = DirectIllumination(intersectionPoint, normalVector, color);
 		// float3 m_diffuseColor = material.m_diffuse * color;
 		// float3 m_diffuseColor = 0.5 * make_float3(normalVector.x+1, normalVector.y+1, normalVector.z+1);
 
@@ -318,29 +318,55 @@ float3 RenderCore::Refract(float3& in, float3& normal, float ior)
 	return k < 0 ? kNegative : eta * in + (eta * cosi - sqrtf(k)) * n;
 }
 
-float3 RenderCore::DirectIllumination(float3& origin, float3& normal)
+float3 RenderCore::DirectIllumination(float3& origin, float3& normal, float3& color)
 {
 	CorePointLight light = pointLight;
 
-	float3 direction = normalize(light.position - origin);
-	Ray shadowRay = Ray(origin, direction);
+	float3 direction = light.position - origin;
+
+	Ray shadowRay = Ray(origin, normalize(direction));
 
 	tuple intersect = Intersect(shadowRay);
 
 	float t_min = get<2>(intersect);
 
-
 	if (t_min != numeric_limits<float>::max())
 	{
-		return make_float3(0.0f, 0.0f, 0.0f);
+		return make_float3(0, 0, 0);
 	}
 
-	float3 vec1 = normalize(direction - origin);
-	float3 vec2 = normalize(normal - origin);
+	float3 N = normalize(normal);
+	float3 L = normalize(light.position - origin);
 
-	float angle = (acos(dot(vec1, vec2)) * 180 / PI) / 90;
+	float lambertian = dot(N, L);
 
-	return make_float3(angle, angle, angle);
+	if (lambertian < 0)
+	{
+		lambertian = 0;
+	}
+	
+	float specAngle = 0;
+	float specular = 0;
+
+	if (lambertian > 0)
+	{
+		float3 R = normalize(-L - N);      // Reflected light vector
+		float3 V = normalize(-origin); // Vector to viewer
+
+		// Compute the specular term
+		float specAngle = dot(R, V);
+
+		if (specAngle < 0)
+		{
+			specAngle = 0;
+		}
+
+		specular = pow(specAngle, 0.4);
+	}
+
+	float3 returnedColor = 0.4 * 0.1 + 0.2 * lambertian * color + 0.3 * specular * make_float3(1, 1, 1);
+
+	return returnedColor;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
