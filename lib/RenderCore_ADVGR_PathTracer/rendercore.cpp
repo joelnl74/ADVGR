@@ -24,6 +24,36 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
+	Sphere sphere;
+	sphere.m_CenterPosition = make_float3(-0.6, -0.4, 2);
+	sphere.m_Radius = 0.2;
+	sphere.m_Material.color.value.x = 1;
+	sphere.m_Material.color.value.y = 0;
+	sphere.m_Material.color.value.z = 0;
+	sphere.m_Material.specular.value = 0.75;
+	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
+
+	Sphere mirrorSphere;
+	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.4, 2);
+	mirrorSphere.m_Radius = 0.2;
+	mirrorSphere.m_Material.color.value.x = 0.95;
+	mirrorSphere.m_Material.color.value.y = 0.95;
+	mirrorSphere.m_Material.color.value.z = 0.95;
+	mirrorSphere.m_Material.specular.value = 1;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+
+	Sphere glassSphere;
+	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
+	glassSphere.m_Radius = 0.2;
+	glassSphere.m_Material.color.value.x = 0;
+	glassSphere.m_Material.color.value.y = 0.0;
+	glassSphere.m_Material.color.value.z = 1;
+	glassSphere.m_Material.specular.value = 1;
+	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
+
+	m_spheres.push_back(sphere);
+	m_spheres.push_back(mirrorSphere);
+	m_spheres.push_back(glassSphere);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -107,10 +137,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-tuple<CoreTri*, float> lh2core::RenderCore::Intersect(Ray ray)
+tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 {
 	float t_min = numeric_limits<float>::max();
 	CoreTri* tri;
+	CoreMaterial coreMaterial;
+	float3 normal = make_float3(0);
 
 	for (Mesh& mesh : meshes) {
 		for (int i = 0; i < mesh.vcount / 3; i++) {
@@ -121,17 +153,29 @@ tuple<CoreTri*, float> lh2core::RenderCore::Intersect(Ray ray)
 			{
 				t_min = t;
 				tri = &mesh.triangles[i];
+				coreMaterial = materials[tri->material];
+				normal = make_float3(tri->Nx, tri->Ny, tri->Nz);
 			}
 		}
 	}
 
-	return make_tuple(tri, t_min);
+	for (auto& sphere : m_spheres)
+	{
+		float t = Utils::IntersectSphere(ray, sphere);
+
+		if (t < t_min)
+		{
+			t_min = t;
+			coreMaterial = sphere.m_Material;
+			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
+		}
+	}
+
+	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 {
-	constexpr float ambient_light = 0.04f;
-
 	tuple intersect = Intersect(ray);
 
 	float t_min = get<1>(intersect);
@@ -148,15 +192,15 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
 
-	CoreTri* triangle = get<0>(intersect);
-
-	CoreMaterial material = materials[triangle->material];
+	CoreMaterial material = get<3>(intersect);
+	float3 normalVector = get<2>(intersect);
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
-	float3 normalVector = make_float3(triangle->Nx, triangle->Ny, triangle->Nz);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
 	if (material.color.textureID > -1)
 	{
+		CoreTri* triangle = get<0>(intersect);
+
 		auto& texture = textures[material.color.textureID];
 
 		float3 p0 = intersectionPoint - triangle->vertex0;
@@ -181,7 +225,8 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		auto uvColors = texture.idata[pixelIdx];
 
-		color = make_float3(uvColors.x, uvColors.y, uvColors.z);
+		float devision = 1.0f / 255;
+		color = make_float3(uvColors.x * devision, uvColors.y * devision, uvColors.z * devision);
 	}
 	
 	if (depth > maxDepth)
@@ -191,8 +236,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		float d = 1 - material.specular.value;
-		return d * CalculateLightContribution(intersectionPoint, normalVector, color);
+		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -201,79 +245,163 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		reflected.m_Direction = Reflect(ray.m_Direction, normalVector);
 
 		float3 m_reflectedColor = color;
-		m_reflectedColor *= Trace(reflected, depth + 1);
+		m_reflectedColor = Trace(reflected, depth + 1);
 
 		return m_reflectedColor;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
-		return color;
+		// Index of reflection for glass
+		float ior = 1.5;
+
+		float3 m_refractionColor = color;
+		float3 m_reflectionColor = color;
+		float3 m_finalColor = make_float3(0,0,0);
+
+		float3 bias = EPSILON * normalVector;
+		bool outside = dot(ray.m_Direction, normalVector) < 0;
+		float3 newOrigin = outside ? intersectionPoint - bias : intersectionPoint + bias;
+
+		float kr = Fresnel(intersectionPoint, normalVector, ior);
+		if (kr < 1) {
+			Ray refraction;
+			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
+			refraction.m_Origin = newOrigin;
+			refraction.m_Direction = normalize(m_refractionDirection);
+			m_refractionColor = Trace(refraction, depth + 1);
+		}
+		
+		Ray reflection;
+		reflection.m_Direction = newOrigin;
+		reflection.m_Direction = Reflect(ray.m_Direction, normalVector);
+		m_reflectionColor = Trace(reflection, depth + 1);
+		
+		m_finalColor += m_reflectionColor * kr + m_refractionColor * (1 - kr);
+
+		return m_finalColor;
 	}
 
 	return color;
 }
 
-float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color)
+float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
 {
 	float3 color = make_float3(0, 0, 0);
+	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
 
 	for (CorePointLight& light : m_pointLights)
 	{
-		float3 direction = normalize(light.position - origin);
+		float3 direction = light.position - origin;
 
-		if (dot(normal, direction) > 0.0f)
+		Ray shadowRay = Ray(origin, normalize(direction));
+
+		tuple intersect = Intersect(shadowRay);
+
+		float t_min = get<1>(intersect);
+
+		if (t_min != numeric_limits<float>::max())
 		{
-			Ray shadowRay = Ray(origin, direction);
-
-			tuple intersect = Intersect(shadowRay);
-
-			float t_min = get<1>(intersect);
-
-			if (t_min != numeric_limits<float>::max())
-			{
-				continue;
-			}
-
-			float distToLight = length(direction);
-
-			float3 scaledIntensity = light.radiance * (1.0f / (distToLight * distToLight));
-
-			// Lambertian Shading
-			color += m_color * scaledIntensity * dot(normal, direction);
+			return m_color * 0.1;
 		}
 
-	}
+		float3 N = normalize(normal);
+		float3 L = normalize(light.position - origin);
 
-	//Handle directional lighting.
-	for (CoreDirectionalLight &light : m_directionalLight)
-	{
-		float3 direction = light.direction;
+		float lambertian = dot(N, L);
 
-		if (dot(normal, direction) > 0.0f)
+		if (lambertian < 0)
 		{
-			Ray shadowRay = Ray(origin, direction);
-			tuple intersect = Intersect(shadowRay);
+			lambertian = 0;
+		}
 
-			float t_min = get<1>(intersect);
+		float specAngle = 0;
+		float specular = 0;
 
-			if (t_min != numeric_limits<float>::max())
+		// Diffuse coeficient.
+		float kd = 0.8;
+		// Ambient reflection
+		float ka = 1.0f;
+		// Ambient reflection.
+		float ks = 1.0f;
+		// Ambient influence.
+		float ambient = 0.1;
+
+		if (lambertian > 0)
+		{
+			float3 R = reflect(-L, N);      // Reflected light vector
+			float3 V = normalize(-origin); // Vector to viewer
+
+			// Compute the specular term
+			float specAngle = dot(R, V);
+
+			if (specAngle < 0)
 			{
-				continue;
+				specAngle = 0;
 			}
 
-			// No distance for directional lights.
-			float3 normalizedDirection = normalize(direction);
-			color += m_color * light.radiance * dot(normal, normalizedDirection); //Lambertian Shading
+			specular = pow(specAngle, 75);
 		}
+
+		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-
-	return color;
+	return color / lightSourceCount;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
 {
 	return normalize(in - 2 * dot(in, normal) * normal);
+}
+
+float3 RenderCore::Refract(float3& in, float3& normal, float ior)
+{
+	float3 n = normal;
+	float theta1 = dot(in, normal);
+	float cosi = clamp(-1.0, 1.0, dot(in, normal));
+	float n1 = 1.0; // Refraction index of air
+	float n2 = ior;
+	if (cosi < 0) {
+		// This means we are outside the surface, we want cos(theta) to be positive
+		cosi = -cosi;
+	}
+	else {
+		// This means we are inside the surface, cos(theta) is already positive but we reverse normal direction
+		n = -normal;
+		// Swap the refraction indices
+		std::swap(n1, n2);
+	}
+
+	float eta = n1 / n2;
+	float k = 1 - eta * eta * (1 - cosi * cosi);
+
+	// If K turns out to be negative return no direction, otherwise return the transmission direction
+	return k < 0 ? make_float3(0, 0, 0) : eta * in + (eta * cosi - sqrtf(k)) * n;
+}
+
+float RenderCore::Fresnel(float3& in, float3& normal, float ior)
+{
+	float kr;
+	float cosi = clamp(-1.0, 1.0, dot(in, normal));
+	float n1 = 1;
+	float n2 = ior; // Index of refraction
+	if (cosi > 0) {
+		std::swap(n1, n2);
+	}
+
+	float sint = n1 / n2 * sqrtf(std::max(0.f, 1 - cosi * cosi));
+	// Total internal reflection
+	if (sint >= 1)
+		kr = 1;
+	else {
+		float cost = sqrtf(std::max(0.f, 1 - sint * sint));
+		cosi = fabsf(cosi);
+		// Reflectance for s-polarized light
+		float refS = ((n2 * cosi) - (n1 * cost)) / ((n2 * cosi) + (n1 * cost));
+		// Reflectance for p-polarized light
+		float refP = ((n1 * cosi) - (n2 * cost)) / ((n1 * cosi) + (n2 * cost));
+		kr = (refS * refS + refP * refP) / 2;
+	}
+	return kr;
 }
 
 void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
@@ -294,7 +422,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 		if (mat.specular.value <= EPSILON)
 		{
-			mat.specular.value = i > 0 ? 0.4f : 1.0f;
+			mat.specular.value = 0.8f;
 			mat.pbrtMaterialType = MaterialType::PBRT_MATTE;
 		}
 
@@ -302,6 +430,9 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		{
 			mat.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
+
+		/*if (i == 0)
+			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;*/
 
 		materials.push_back(mat);
 	}
