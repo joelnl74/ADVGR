@@ -93,8 +93,6 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
-	Ray ray;
-
 	float dx = 1.0f / (SCRWIDTH - 1);
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
