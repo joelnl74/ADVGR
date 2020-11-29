@@ -262,17 +262,15 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		float kr = Fresnel(intersectionPoint, normalVector, ior);
 		if (kr < 1) {
-			Ray refraction;
 			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
-			refraction.m_Origin = newOrigin;
-			refraction.m_Direction = normalize(m_refractionDirection);
-			m_refractionColor = Trace(refraction, depth + 1);
+			ray.m_Origin = newOrigin;
+			ray.m_Direction = normalize(m_refractionDirection);
+			m_refractionColor = Trace(ray, depth + 1);
 		}
 		
-		Ray reflection;
-		reflection.m_Direction = newOrigin;
-		reflection.m_Direction = Reflect(ray.m_Direction, normalVector);
-		m_reflectionColor = Trace(reflection, depth + 1);
+		ray.m_Direction = newOrigin;
+		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
+		m_reflectionColor = Trace(ray, depth + 1);
 		
 		m_finalColor += m_reflectionColor * kr + m_refractionColor * (1 - kr);
 
