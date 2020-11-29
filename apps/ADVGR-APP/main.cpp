@@ -36,9 +36,9 @@ static CoreStats coreStats;
 void PrepareScene()
 {
 	// initialize scene
-	int boxScene = renderer->AddMesh("../_shareddata/simple_scene_2.obj", 0.05f);
+	int boxScene = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.05f);
 	renderer->AddInstance(boxScene);
-	renderer->AddPointLight(make_float3(0, 0.25, 0), 10 * make_float3(1, 1, 1));
+	renderer->AddPointLight(make_float3(0, 0.25, 0), 50 * make_float3(10, 10, 10));
 	// renderer->AddDirectionalLight(make_float3(0, 20, 0), make_float3(10, 10, 10));
 
 	auto scene = renderer->GetScene();

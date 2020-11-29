@@ -24,6 +24,36 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
+	Sphere sphere;
+	sphere.m_CenterPosition = make_float3(-0.6, -0.4, 2);
+	sphere.m_Radius = 0.2;
+	sphere.m_Material.color.value.x = 1;
+	sphere.m_Material.color.value.y = 0;
+	sphere.m_Material.color.value.z = 0;
+	sphere.m_Material.specular.value = 0.75;
+	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
+
+	Sphere mirrorSphere;
+	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.4, 2);
+	mirrorSphere.m_Radius = 0.2;
+	mirrorSphere.m_Material.color.value.x = 0.95;
+	mirrorSphere.m_Material.color.value.y = 0.95;
+	mirrorSphere.m_Material.color.value.z = 0.95;
+	mirrorSphere.m_Material.specular.value = 1;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+
+	Sphere glassSphere;
+	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
+	glassSphere.m_Radius = 0.2;
+	glassSphere.m_Material.color.value.x = 0.95;
+	glassSphere.m_Material.color.value.y = 0.0;
+	glassSphere.m_Material.color.value.z = 0.95;
+	glassSphere.m_Material.specular.value = 1;
+	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
+
+	m_spheres.push_back(sphere);
+	m_spheres.push_back(mirrorSphere);
+	m_spheres.push_back(glassSphere);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -107,10 +137,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-tuple<CoreTri*, float> lh2core::RenderCore::Intersect(Ray ray)
+tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 {
 	float t_min = numeric_limits<float>::max();
 	CoreTri* tri;
+	CoreMaterial coreMaterial;
+	float3 normal = make_float3(0);
 
 	for (Mesh& mesh : meshes) {
 		for (int i = 0; i < mesh.vcount / 3; i++) {
@@ -121,17 +153,29 @@ tuple<CoreTri*, float> lh2core::RenderCore::Intersect(Ray ray)
 			{
 				t_min = t;
 				tri = &mesh.triangles[i];
+				coreMaterial = materials[tri->material];
+				normal = make_float3(tri->Nx, tri->Ny, tri->Nz);
 			}
 		}
 	}
 
-	return make_tuple(tri, t_min);
+	for (auto& sphere : m_spheres)
+	{
+		float t = Utils::IntersectSphere(ray, sphere);
+
+		if (t < t_min)
+		{
+			t_min = t;
+			coreMaterial = sphere.m_Material;
+			normal = (ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition;
+		}
+	}
+
+	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 {
-	constexpr float ambient_light = 0.04f;
-
 	tuple intersect = Intersect(ray);
 
 	float t_min = get<1>(intersect);
@@ -148,15 +192,15 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
 
-	CoreTri* triangle = get<0>(intersect);
-
-	CoreMaterial material = materials[triangle->material];
+	CoreMaterial material = get<3>(intersect);
+	float3 normalVector = get<2>(intersect);
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
-	float3 normalVector = make_float3(triangle->Nx, triangle->Ny, triangle->Nz);
 
 	if (material.color.textureID > -1)
 	{
+		CoreTri* triangle = get<0>(intersect);
+
 		auto& texture = textures[material.color.textureID];
 
 		float3 p0 = intersectionPoint - triangle->vertex0;
@@ -273,11 +317,11 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		float specular = 0;
 
 		// Diffuse coeficient.
-		float kd = 1 - material.specular.value;
+		float kd = 0.8;
 		// Ambient reflection
 		float ka = 1.0f;
 		// Ambient reflection.
-		float ks = 0.75f;
+		float ks = 1.0f;
 		// Ambient influence.
 		float ambient = 0.1;
 
@@ -297,8 +341,10 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 			specular = pow(specAngle, 75);
 		}
 
-		return ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
+		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
+
+	return color / lightSourceCount;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
@@ -375,7 +421,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 		if (mat.specular.value <= EPSILON)
 		{
-			mat.specular.value = i > 0 ? 0.4f : 1.0f;
+			mat.specular.value = 0.8f;
 			mat.pbrtMaterialType = MaterialType::PBRT_MATTE;
 		}
 
