@@ -45,9 +45,9 @@ void RenderCore::Init()
 	Sphere glassSphere;
 	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
 	glassSphere.m_Radius = 0.2;
-	glassSphere.m_Material.color.value.x = 0.95;
+	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
-	glassSphere.m_Material.color.value.z = 0.95;
+	glassSphere.m_Material.color.value.z = 1;
 	glassSphere.m_Material.specular.value = 1;
 	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
 
@@ -300,7 +300,13 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (t_min != numeric_limits<float>::max())
 		{
-			return make_float3(0, 0, 0);
+			if (m_color.x > 0)
+			{
+				float devision = 1.0f / 255;
+				m_color = make_float3(m_color.x * devision, m_color.y * devision, m_color.z * devision);
+			}
+
+			return m_color * 0.1;
 		}
 
 		float3 N = normalize(normal);
