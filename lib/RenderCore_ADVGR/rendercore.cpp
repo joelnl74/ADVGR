@@ -225,7 +225,8 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		auto uvColors = texture.idata[pixelIdx];
 
-		color = make_float3(uvColors.x, uvColors.y, uvColors.z);
+		float devision = 1.0f / 255;
+		color = make_float3(uvColors.x * devision, uvColors.y * devision, uvColors.z * devision);
 	}
 	
 	if (depth > maxDepth)
@@ -300,12 +301,6 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (t_min != numeric_limits<float>::max())
 		{
-			if (m_color.x > 0)
-			{
-				float devision = 1.0f / 255;
-				m_color = make_float3(m_color.x * devision, m_color.y * devision, m_color.z * devision);
-			}
-
 			return m_color * 0.1;
 		}
 
