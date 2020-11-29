@@ -167,7 +167,7 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 		{
 			t_min = t;
 			coreMaterial = sphere.m_Material;
-			normal = (ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition;
+			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
 		}
 	}
 
