@@ -56,7 +56,7 @@ void RenderCore::Init()
 	m_spheres.push_back(glassSphere);
 
 	CoreLightTri coreTriLight{};
-	coreTriLight.area = 5;
+	coreTriLight.area = 10;
 	coreTriLight.centre = make_float3(0, 1, 0);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
@@ -220,11 +220,25 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	float t_min = get<1>(intersect);
 	bool hitLight = get<4>(intersect);
 
+	CoreMaterial material = get<3>(intersect);
+	float3 normalVector = get<2>(intersect);
+	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
+	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
+
 	if (hitLight)
 	{
-		CoreMaterial material = get<3>(intersect);
+		Ray random;
+		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
+		float3 attenuation = color;
 
-		return make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
+		// Random point on the hemisphere
+		random.m_Origin = intersectionPoint;
+		random.m_Direction = normalize(target - intersectionPoint);
+
+		CoreMaterial material = get<3>(intersect);
+		float3 BRDF = material.color.value * INVPI;
+		float cos_i = dot(random.m_Direction, normalVector);
+		return 2.0f * PI * BRDF * make_float3(1, 1, 1) * cos_i;
 	}
 
 	if (t_min == numeric_limits<float>::max())
@@ -239,10 +253,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
 
-	CoreMaterial material = get<3>(intersect);
-	float3 normalVector = get<2>(intersect);
-	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
-	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
+	
 
 	if (material.color.textureID > -1)
 	{
@@ -349,7 +360,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (t_min != numeric_limits<float>::max())
 		{
-			return m_color * 0.1;
+			return m_color * 0.0;
 		}
 
 		float3 N = normalize(normal);
