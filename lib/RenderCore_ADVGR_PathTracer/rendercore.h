@@ -15,6 +15,7 @@
 
 #pragma once
 #include "Ray.h"
+#include "Sphere.h"
 #include "rendersystem.h"
 
 namespace lh2core
@@ -56,14 +57,16 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	tuple<CoreTri*, float> Intersect(Ray ray);
 	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
-	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color);
+	tuple<CoreTri*, float, float3, CoreMaterial> Intersect(Ray ray);
+	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
 	float3 Reflect(float3& in, float3 normal);
+	float3 Refract(float3& in, float3& normal, float ior);
+	float Fresnel(float3& in, float3& normal, float ior);
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
-	inline void Setting( const char* name, float value ) override {}
+	inline void Setting(const char* name, float value ) override {}
 
 	inline void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) override {}
 	inline void FinalizeInstances() override {}
@@ -83,13 +86,23 @@ public:
 	vector<float3> skyData;
 	int skyWidth, skyHeight;
 
-	vector<CoreMaterial> materials;           // material data storage
-	vector<CoreTexDesc> textures;           // texture data storage
+	// material data storage
+	vector<CoreMaterial> materials;           
+	// texture data storage
+	vector<CoreTexDesc> textures;        
 
-	vector<CorePointLight> m_pointLights; // Point lights.
-	vector<CoreDirectionalLight> m_directionalLight; // Point lights.
-	vector<CoreSpotLight> m_spotLights; // Point lights.
-	vector<CoreLightTri> m_coreTriLight; // Point lights.
+	 // Point lights.
+	vector<CorePointLight> m_pointLights;
+	// directional lights.
+	vector<CoreDirectionalLight> m_directionalLight; 
+	// Spot lights.
+	vector<CoreSpotLight> m_spotLights; 
+	// Point lights.
+	vector<CoreLightTri> m_coreTriLight; 
+
+	vector<Sphere> m_spheres;
+
+	Ray ray;
 
 	int maxDepth = 3;
 };

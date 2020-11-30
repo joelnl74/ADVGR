@@ -102,6 +102,8 @@ public:
 
 	vector<Sphere> m_spheres;
 
+	Ray ray;
+
 	int maxDepth = 3;
 };
 

@@ -98,8 +98,8 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR_PathTracer");
-	renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR");
+	renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR_PathTracer");
+	// renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR");
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene

@@ -5,6 +5,28 @@
 class Utils
 {
 public:
+    static float IntersectSphere(Ray ray, Sphere sphere)
+    {
+        float3 C = sphere.m_CenterPosition - ray.m_Origin;
+        float t = dot(C, ray.m_Direction);
+        float3 Q = C - t * ray.m_Direction;
+        float p2 = dot(Q, Q);
+        float r2 = sphere.m_Radius * sphere.m_Radius;
+        if (p2 > (r2))
+        {
+            return numeric_limits<float>::max();
+        }
+
+        t -= sqrt(r2 - p2);
+
+        if (t > 0.001)
+        {
+            return t;
+        }
+
+        return numeric_limits<float>::max();
+    }
+
     static float IntersectTriangle(Ray ray, float3 p0, float3 p1, float3 p2)
     {
         float3 edge1, edge2, h, s, q;
