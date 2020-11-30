@@ -182,6 +182,8 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 
 bool lh2core::RenderCore::Scatter(Ray ray, CoreMaterial& material, float3& intersectionPoint, float3& normal)
 {
+	float3 target = intersectionPoint + normal + Utils::RandomInUnitSphere();
+
 	return false;
 }
 
@@ -275,7 +277,9 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		float3 newOrigin = outside ? intersectionPoint - bias : intersectionPoint + bias;
 
 		float kr = Fresnel(intersectionPoint, normalVector, ior);
-		if (kr < 1) {
+		
+		if (kr < 1) 
+		{
 			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
 			ray.m_Origin = newOrigin;
 			ray.m_Direction = normalize(m_refractionDirection);

@@ -1,4 +1,7 @@
 #pragma once
+#include<random>
+#include<cmath>
+#include<chrono>
 #include "Ray.h"
 #include "core_api_base.h"
 
@@ -25,6 +28,29 @@ public:
         }
 
         return numeric_limits<float>::max();
+    }
+
+    static float RandomFloat()
+    {
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::mt19937 generator(seed);
+        std::uniform_real_distribution<double> uniform01(0.0, 1.0);
+
+        return uniform01(generator);
+    }
+
+    static float3 RandomInUnitSphere()
+    {
+        float3 p;
+        float randomOne = RandomFloat();
+        float randomTwo = RandomFloat();
+        float randomThree = RandomFloat();
+
+        p = 2.0 * make_float3(RandomFloat(), RandomFloat(), RandomFloat()) - make_float3(1, 1, 1);
+
+        auto sqrLength = sqrlength(p);
+
+        return p;
     }
 
     static float IntersectTriangle(Ray ray, float3 p0, float3 p1, float3 p2)
