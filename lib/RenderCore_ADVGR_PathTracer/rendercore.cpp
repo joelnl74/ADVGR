@@ -182,7 +182,7 @@ tuple<CoreTri*, float, float3, CoreMaterial, bool> RenderCore::Intersect(Ray ray
 	{
 		Sphere sphere;
 		sphere.m_Radius = light.area;
-		sphere.m_CenterPosition;
+		sphere.m_CenterPosition = light.centre;
 
 		float t = Utils::IntersectSphere(ray, sphere);
 
