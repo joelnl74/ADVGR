@@ -57,18 +57,11 @@ void RenderCore::Init()
 
 	CoreLightTri coreTriLight{};
 	coreTriLight.area = 10;
-	coreTriLight.centre = make_float3(-1, 1, 0);
+	coreTriLight.centre = make_float3(0, 6, -1);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
-
-	CoreLightTri coreTriLight2{};
-	coreTriLight2.area = 10;
-	coreTriLight2.centre = make_float3(1, 1, 0);
-	coreTriLight2.energy = 500;
-	coreTriLight2.radiance = make_float3(1, 1, 1);
 	
 	m_coreTriLight.push_back(coreTriLight);
-	m_coreTriLight.push_back(coreTriLight2);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -124,8 +117,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			float3 point = view.p1 + sx + sy;
 			// direction
 			float3 direction = normalize(point - view.pos);
-
-			BRDF = make_float3(0);
 
 			ray.t = INT_MAX;
 			ray.m_Origin = view.pos;
@@ -200,26 +191,13 @@ tuple<CoreTri*, float, float3, CoreMaterial, bool> RenderCore::Intersect(Ray ray
 			t_min = t;
 			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
 			isLight = true;
-			coreMaterial.color.value.x = 255;
-			coreMaterial.color.value.y = 255;
+			coreMaterial.color.value.x = 1;
+			coreMaterial.color.value.y = 1;
 			coreMaterial.color.value.z = 0;
 		}
 	}
 
 	return make_tuple(tri, t_min, normal, coreMaterial, isLight);
-}
-
-bool lh2core::RenderCore::Scatter(Ray ray, CoreMaterial& material, float3 &color, float3& intersectionPoint, float3& normal)
-{
-	int lightSourceCount = m_coreTriLight.size();
-
-	float3 target = intersectionPoint + normal + Utils::RandomInUnitSphere();
-	float3 attenuation = color;
-
-	ray.m_Origin = intersectionPoint;
-	ray.m_Direction = normalize(target - intersectionPoint);
-
-	return false;
 }
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
@@ -236,6 +214,8 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (t_min == numeric_limits<float>::max())
 	{
+		return BLACK;
+
 		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
 		float v = acosf(ray.m_Direction.y) * INVPI;
 
@@ -244,7 +224,6 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		int pixelIdx = yPixel * skyWidth + xPixel;
 
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
-		// return BLACK;
 	}
 
 	if (depth > maxDepth)
@@ -286,26 +265,28 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (hitLight)
 	{
-		float3 randomD = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
 		// Calculate emittance
-		BRDF = color * INVPI;
+		float3 BRDF = color / PI;
 		float cos_i = dot(ray.m_Direction, normalVector);
 		// Light is always white in this case
-		return PI * 2.0f * BRDF * WHITE * cos_i;
+		float3 returnedColor = PI * 2.0f * BRDF * WHITE * abs(cos_i);
+
+		return returnedColor;
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
 		// BRDF = color * INVPI;
-		BRDF = color / PI;
+		float3 BRDF = color / PI;
 		
-		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
+		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
+		float3 target = intersectionPoint + normalVector + RandomUnitSpehere;
 		float3 attenuation = color;
 
 		//ray.m_Origin = intersectionPoint;
 		//ray.m_Direction = normalize(target - intersectionPoint);
 		float3 randomD = normalize(target - intersectionPoint);
-		Ray r(intersectionPoint, randomD);
+		Ray r(intersectionPoint + randomD * EPSILON, randomD);
 		float cos_i = dot(normalVector, randomD);
 
 		auto Ei = Trace(r, depth + 1) * cos_i;
