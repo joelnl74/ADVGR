@@ -125,6 +125,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			// direction
 			float3 direction = normalize(point - view.pos);
 
+			BRDF = make_float3(0);
+
 			ray.t = INT_MAX;
 			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
@@ -281,24 +283,27 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		color = make_float3(uvColors.x * devision, uvColors.y * devision, uvColors.z * devision);
 	}
 
+	if (hitLight)
+	{
+		CoreMaterial material = get<3>(intersect);
+		float cos_i = dot(ray.m_Direction, normalVector);
+
+		return m_coreTriLight[0].radiance;
+	}
+
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
+		BRDF = material.color.value * INVPI;
+		
 		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
 		float3 attenuation = color;
-
-		if (hitLight)
-		{
-			CoreMaterial material = get<3>(intersect);
-			float3 BRDF = material.color.value * INVPI;
-			float cos_i = dot(ray.m_Direction, normalVector);
-
-			return 2.0f * PI * BRDF * make_float3(1, 1, 1) * cos_i;
-		}
 
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = normalize(target - intersectionPoint);
 
-		Trace(ray, depth + 1);
+		auto Ei = Trace(ray, depth + 1);
+
+		return PI * 2.0f * BRDF * Ei;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
