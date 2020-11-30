@@ -41,16 +41,13 @@ public:
 
     static float3 RandomInUnitSphere()
     {
-        float3 p;
-        float randomOne = RandomFloat();
-        float randomTwo = RandomFloat();
-        float randomThree = RandomFloat();
+        double theta = 2 * PI * RandomFloat();
+        double phi = acos(1 - 2 * RandomFloat());
+        double x = sin(phi) * cos(theta);
+        double y = sin(phi) * sin(theta);
+        double z = cos(phi);
 
-        p = 2.0 * make_float3(RandomFloat(), RandomFloat(), RandomFloat()) - make_float3(1, 1, 1);
-
-        auto sqrLength = sqrlength(p);
-
-        return p;
+        return make_float3(x, y, z);
     }
 
     static float IntersectTriangle(Ray ray, float3 p0, float3 p1, float3 p2)
