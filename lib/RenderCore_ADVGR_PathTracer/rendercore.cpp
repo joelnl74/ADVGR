@@ -180,7 +180,7 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
-bool lh2core::RenderCore::Scatter(Ray ray)
+bool lh2core::RenderCore::Scatter(Ray ray, CoreMaterial& material, float3& intersectionPoint, float3& normal)
 {
 	return false;
 }
@@ -247,7 +247,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		bool hitLightSource = Scatter(ray);
+		bool hitLightSource = Scatter(ray, material, intersectionPoint, normalVector);
 
 		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
 	}
