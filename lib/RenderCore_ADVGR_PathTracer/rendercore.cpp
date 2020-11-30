@@ -59,8 +59,8 @@ void RenderCore::Init()
 	coreTriLight.area = 5;
 	coreTriLight.centre = make_float3(0, 1, 0);
 	coreTriLight.energy = 500;
-	coreTriLight.radiance = make_float3(1500, 1500, 1500);
-
+	coreTriLight.radiance = make_float3(1, 1, 1);
+	
 	m_coreTriLight.push_back(coreTriLight);
 }
 
@@ -178,6 +178,11 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	}
 
 	return make_tuple(tri, t_min, normal, coreMaterial);
+}
+
+bool lh2core::RenderCore::Scatter(Ray ray)
+{
+	return false;
 }
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
@@ -324,7 +329,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		float kd = 0.8;
 		// Ambient reflection
 		float ka = 1.0f;
-		// Ambient reflection.
+		// Specular reflection.
 		float ks = 1.0f;
 		// Ambient influence.
 		float ambient = 0.1;
