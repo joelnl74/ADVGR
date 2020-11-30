@@ -102,18 +102,17 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	float dx = 1.0f / (SCRWIDTH - 1);
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
-	// render
 	for (int y = 0; y < SCRHEIGHT; y++)
 	{
 		for (int x = 0; x < SCRWIDTH; x++)
 		{
-			// screen width
+			// Screen Width
 			float3 sx = x * dx * (view.p2 - view.p1);
-			// screen height
+			// Screen Height
 			float3 sy = y * dy * (view.p3 - view.p1);
-			// point on the screen
+			// Point on the screen
 			float3 point = view.p1 + sx + sy;
-			// direction
+			// Direction
 			float3 direction = normalize(point - view.pos);
 
 			ray.t = INT_MAX;
@@ -136,7 +135,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	}
 
 
-	// copy pixel buffer to OpenGL render target texture
+	// Copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
@@ -151,6 +150,7 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	for (Mesh& mesh : meshes) {
 		for (int i = 0; i < mesh.vcount / 3; i++) {
 			
+			// Check if we are able to intersect a triangle. If not, max float is returned
 			float t = Utils::IntersectTriangle(ray, mesh.triangles[i].vertex0, mesh.triangles[i].vertex1, mesh.triangles[i].vertex2);
 			
 			if (t < t_min)
@@ -165,6 +165,7 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 
 	for (auto& sphere : m_spheres)
 	{
+		// Check if we are able to intersect a sphere. If not, max float is returned
 		float t = Utils::IntersectSphere(ray, sphere);
 
 		if (t < t_min)
@@ -184,6 +185,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	float t_min = get<1>(intersect);
 
+	// If a ray missed a primitive, show a skydome
 	if (t_min == numeric_limits<float>::max())
 	{
 		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
@@ -201,6 +203,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
+	// If the material contains a texture, set texture
 	if (material.color.textureID > -1)
 	{
 		CoreTri* triangle = get<0>(intersect);
@@ -211,7 +214,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		float3 p1 = intersectionPoint - triangle->vertex1;
 		float3 p2 = intersectionPoint - triangle->vertex2;
 
-		// main triangle area a
+		// Main triangle area a
 		float a = length(cross(p0 - p1, p0 - p2));
 		// p1's triangle area / a
 		float u = length(cross(p1, p2)) / a;
@@ -233,6 +236,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		color = make_float3(uvColors.x * devision, uvColors.y * devision, uvColors.z * devision);
 	}
 	
+	// Recursion cap
 	if (depth > maxDepth)
 	{
 		return color;
@@ -266,6 +270,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		bool outside = dot(ray.m_Direction, normalVector) < 0;
 		float3 newOrigin = outside ? intersectionPoint - bias : intersectionPoint + bias;
 
+		// Calculate chance for reflection and refraction
 		float kr = Fresnel(intersectionPoint, normalVector, ior);
 		if (kr < 1) {
 			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
@@ -319,7 +324,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		float specAngle = 0;
 		float specular = 0;
 
-		// Diffuse coeficient.
+		// Diffuse coefficient.
 		float kd = 0.8;
 		// Ambient reflection
 		float ka = 1.0f;
