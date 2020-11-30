@@ -143,9 +143,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
+tuple<CoreTri*, float, float3, CoreMaterial, bool> RenderCore::Intersect(Ray ray)
 {
 	float t_min = numeric_limits<float>::max();
+	bool isLight = false;
 	CoreTri* tri;
 	CoreMaterial coreMaterial;
 	float3 normal = make_float3(0);
@@ -177,11 +178,32 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 		}
 	}
 
-	return make_tuple(tri, t_min, normal, coreMaterial);
+	for (auto& light : m_coreTriLight)
+	{
+		Sphere sphere;
+		sphere.m_Radius = light.area;
+		sphere.m_CenterPosition;
+
+		float t = Utils::IntersectSphere(ray, sphere);
+
+		if (t < t_min)
+		{
+			t_min = t;
+			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
+			isLight = true;
+			coreMaterial.color.value.x = 255;
+			coreMaterial.color.value.y = 255;
+			coreMaterial.color.value.z = 0;
+		}
+	}
+
+	return make_tuple(tri, t_min, normal, coreMaterial, isLight);
 }
 
 bool lh2core::RenderCore::Scatter(Ray ray, CoreMaterial& material, float3 &color, float3& intersectionPoint, float3& normal)
 {
+	int lightSourceCount = m_coreTriLight.size();
+
 	float3 target = intersectionPoint + normal + Utils::RandomInUnitSphere();
 	float3 attenuation = color;
 
@@ -196,6 +218,14 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	tuple intersect = Intersect(ray);
 
 	float t_min = get<1>(intersect);
+	bool hitLight = get<4>(intersect);
+
+	if (hitLight)
+	{
+		CoreMaterial material = get<3>(intersect);
+
+		return make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
+	}
 
 	if (t_min == numeric_limits<float>::max())
 	{
@@ -428,7 +458,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 	// copy the supplied array of materials
 	for (int i = 0; i < materialCount; i++) {
-		CoreMaterial mat;
+		CoreMaterial mat{};
 
 		float3 color = make_float3(material[i].color.value.x, material[i].color.value.y, material[i].color.value.z);
 		mat.color.value.x = color.x;
