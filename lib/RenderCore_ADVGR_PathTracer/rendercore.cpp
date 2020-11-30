@@ -57,11 +57,18 @@ void RenderCore::Init()
 
 	CoreLightTri coreTriLight{};
 	coreTriLight.area = 10;
-	coreTriLight.centre = make_float3(0, 1, 0);
+	coreTriLight.centre = make_float3(-1, 1, 0);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
+
+	CoreLightTri coreTriLight2{};
+	coreTriLight2.area = 10;
+	coreTriLight2.centre = make_float3(1, 1, 0);
+	coreTriLight2.energy = 500;
+	coreTriLight2.radiance = make_float3(1, 1, 1);
 	
 	m_coreTriLight.push_back(coreTriLight);
+	m_coreTriLight.push_back(coreTriLight2);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -218,10 +225,10 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	tuple intersect = Intersect(ray);
 
 	float t_min = get<1>(intersect);
-	bool hitLight = get<4>(intersect);
-
-	CoreMaterial material = get<3>(intersect);
 	float3 normalVector = get<2>(intersect);
+	bool hitLight = get<4>(intersect);
+	CoreMaterial material = get<3>(intersect);
+
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
@@ -252,8 +259,6 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
-
-	
 
 	if (material.color.textureID > -1)
 	{
@@ -294,8 +299,6 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		bool hitLightSource = Scatter(ray, material, color, intersectionPoint, normalVector);
-
 		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
@@ -360,7 +363,9 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (t_min != numeric_limits<float>::max())
 		{
-			return m_color * 0.0;
+			color += m_color * 0.0;
+
+			continue;
 		}
 
 		float3 N = normalize(normal);
