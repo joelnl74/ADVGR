@@ -293,7 +293,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		BRDF = material.color.value * INVPI;
+		BRDF = color * INVPI;
 		
 		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
 		float3 attenuation = color;
