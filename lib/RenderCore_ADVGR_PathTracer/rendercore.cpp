@@ -226,27 +226,11 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	float t_min = get<1>(intersect);
 	float3 normalVector = get<2>(intersect);
-	bool hitLight = get<4>(intersect);
 	CoreMaterial material = get<3>(intersect);
+	bool hitLight = get<4>(intersect);
 
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
-
-	if (hitLight)
-	{
-		Ray random;
-		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
-		float3 attenuation = color;
-
-		// Random point on the hemisphere
-		random.m_Origin = intersectionPoint;
-		random.m_Direction = normalize(target - intersectionPoint);
-
-		CoreMaterial material = get<3>(intersect);
-		float3 BRDF = material.color.value * INVPI;
-		float cos_i = dot(random.m_Direction, normalVector);
-		return 2.0f * PI * BRDF * make_float3(1, 1, 1) * cos_i;
-	}
 
 	if (t_min == numeric_limits<float>::max())
 	{
@@ -258,6 +242,11 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		int pixelIdx = yPixel * skyWidth + xPixel;
 
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
+	}
+
+	if (depth > maxDepth)
+	{
+		return color;
 	}
 
 	if (material.color.textureID > -1)
@@ -291,15 +280,25 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		float devision = 1.0f / 255;
 		color = make_float3(uvColors.x * devision, uvColors.y * devision, uvColors.z * devision);
 	}
-	
-	if (depth > maxDepth)
-	{
-		return color;
-	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
+		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
+		float3 attenuation = color;
+
+		if (hitLight)
+		{
+			CoreMaterial material = get<3>(intersect);
+			float3 BRDF = material.color.value * INVPI;
+			float cos_i = dot(ray.m_Direction, normalVector);
+
+			return 2.0f * PI * BRDF * make_float3(1, 1, 1) * cos_i;
+		}
+
+		ray.m_Origin = intersectionPoint;
+		ray.m_Direction = normalize(target - intersectionPoint);
+
+		Trace(ray, depth + 1);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
