@@ -284,7 +284,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 	float3 color = make_float3(0, 0, 0);
 	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
 
-	for (CorePointLight& light : m_pointLights)
+	for (CoreLightTri& light : m_coreTriLight)
 	{
 		float3 direction = light.position - origin;
 
