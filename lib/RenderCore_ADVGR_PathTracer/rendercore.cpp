@@ -54,6 +54,14 @@ void RenderCore::Init()
 	m_spheres.push_back(sphere);
 	m_spheres.push_back(mirrorSphere);
 	m_spheres.push_back(glassSphere);
+
+	CoreLightTri coreTriLight{};
+	coreTriLight.area = 5;
+	coreTriLight.centre = make_float3(0, 1, 0);
+	coreTriLight.energy = 500;
+	coreTriLight.radiance = make_float3(1500, 1500, 1500);
+
+	m_coreTriLight.push_back(coreTriLight);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -286,7 +294,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 	for (CoreLightTri& light : m_coreTriLight)
 	{
-		float3 direction = light.position - origin;
+		float3 direction = light.centre - origin;
 
 		Ray shadowRay = Ray(origin, normalize(direction));
 
@@ -300,7 +308,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		}
 
 		float3 N = normalize(normal);
-		float3 L = normalize(light.position - origin);
+		float3 L = normalize(light.centre - origin);
 
 		float lambertian = dot(N, L);
 
