@@ -57,7 +57,7 @@ void RenderCore::Init()
 
 	CoreLightTri coreTriLight{};
 	coreTriLight.area = 10;
-	coreTriLight.centre = make_float3(0, 6, -1);
+	coreTriLight.centre = make_float3(0, 10, -5);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
 	
@@ -266,7 +266,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	if (hitLight)
 	{
 		// Calculate emittance
-		float3 BRDF = color / PI;
+		float3 BRDF = mainColor / PI;
 		float cos_i = dot(ray.m_Direction, normalVector);
 		// Light is always white in this case
 		float3 returnedColor = PI * 2.0f * BRDF * WHITE * abs(cos_i);
@@ -277,7 +277,9 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
 		// BRDF = color * INVPI;
-		float3 BRDF = color / PI;
+		mainColor = color;
+		
+		float3 BRDF = mainColor / PI;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
 		float3 target = intersectionPoint + normalVector + RandomUnitSpehere;

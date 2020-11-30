@@ -83,6 +83,8 @@ public:
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 
+	float3 mainColor;
+
 	vector<float3> skyData;
 	int skyWidth, skyHeight;
 
