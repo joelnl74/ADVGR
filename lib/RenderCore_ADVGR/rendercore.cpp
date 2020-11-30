@@ -54,6 +54,12 @@ void RenderCore::Init()
 	m_spheres.push_back(sphere);
 	m_spheres.push_back(mirrorSphere);
 	m_spheres.push_back(glassSphere);
+
+	CoreLightTri coreLightTri{};
+	coreLightTri.area = 5;
+	coreLightTri.centre = make_float3(0, 1, 0);
+
+	m_coreTriLight.push_back(coreLightTri);
 }
 
 //  +-----------------------------------------------------------------------------+
