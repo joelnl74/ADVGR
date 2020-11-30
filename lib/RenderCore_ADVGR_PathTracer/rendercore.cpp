@@ -40,7 +40,7 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
 	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere glassSphere;
 	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
@@ -49,7 +49,7 @@ void RenderCore::Init()
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
 	glassSphere.m_Material.specular.value = 1;
-	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
+	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	m_spheres.push_back(sphere);
 	m_spheres.push_back(mirrorSphere);
@@ -286,12 +286,12 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		//ray.m_Origin = intersectionPoint;
 		//ray.m_Direction = normalize(target - intersectionPoint);
 		float3 randomD = normalize(target - intersectionPoint);
-		Ray r(intersectionPoint + randomD * EPSILON, randomD);
+		Ray r(intersectionPoint, randomD);
 		float cos_i = dot(normalVector, randomD);
 
-		auto Ei = Trace(r, depth + 1) * cos_i;
+		auto Ei = Trace(r, depth + 1);
 
-		return PI * 2.0f * BRDF * Ei;
+		return PI * 2.0f * BRDF * Ei * cos_i;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
