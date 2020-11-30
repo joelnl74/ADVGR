@@ -247,6 +247,8 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
+		bool hitLightSource = Scatter(ray);
+
 		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
