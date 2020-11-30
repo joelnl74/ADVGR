@@ -244,6 +244,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		int pixelIdx = yPixel * skyWidth + xPixel;
 
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
+		// return BLACK;
 	}
 
 	if (depth > maxDepth)
@@ -285,23 +286,29 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (hitLight)
 	{
-		CoreMaterial material = get<3>(intersect);
+		float3 randomD = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
+		// Calculate emittance
+		BRDF = color * INVPI;
 		float cos_i = dot(ray.m_Direction, normalVector);
-
-		return m_coreTriLight[0].radiance;
+		// Light is always white in this case
+		return PI * 2.0f * BRDF * WHITE * cos_i;
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		BRDF = color * INVPI;
+		// BRDF = color * INVPI;
+		BRDF = color / PI;
 		
 		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
 		float3 attenuation = color;
 
-		ray.m_Origin = intersectionPoint;
-		ray.m_Direction = normalize(target - intersectionPoint);
+		//ray.m_Origin = intersectionPoint;
+		//ray.m_Direction = normalize(target - intersectionPoint);
+		float3 randomD = normalize(target - intersectionPoint);
+		Ray r(intersectionPoint, randomD);
+		float cos_i = dot(normalVector, randomD);
 
-		auto Ei = Trace(ray, depth + 1);
+		auto Ei = Trace(r, depth + 1) * cos_i;
 
 		return PI * 2.0f * BRDF * Ei;
 	}
