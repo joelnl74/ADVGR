@@ -25,8 +25,8 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-0.65, -0.55, 2.5);
-	sphere.m_Radius = 0.3;
+	sphere.m_CenterPosition = make_float3(-2, -0.05, 6);
+	sphere.m_Radius = 1;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
 	sphere.m_Material.color.value.z = 0;
@@ -34,8 +34,8 @@ void RenderCore::Init()
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.55, 2.5);
-	mirrorSphere.m_Radius = 0.3;
+	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.05, 6);
+	mirrorSphere.m_Radius = 1;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
@@ -43,8 +43,8 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(0.65, -0.55, 2.5);
-	glassSphere.m_Radius = 0.3;
+	glassSphere.m_CenterPosition = make_float3(2, -0.05, 6);
+	glassSphere.m_Radius = 1;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
@@ -60,7 +60,7 @@ void RenderCore::Init()
 	coreTriLight.centre = make_float3(0, 1, 3);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
-	coreTriLight.vertex0 = make_float3(-7.5, 3.5, 3);
+	coreTriLight.vertex0 = make_float3(-7.5, 4.5, 1.5);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
@@ -295,8 +295,8 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		mainColor = BRDF;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
-		float3 target = intersectionPoint + RandomUnitSpehere + normalVector;
-		float3 randomDirection = normalize(target - intersectionPoint);
+		float3 target = intersectionPoint + RandomUnitSpehere * 1.0001;
+		float3 randomDirection = normalize(RandomUnitSpehere);
 
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = randomDirection;
