@@ -334,7 +334,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 			m_refractionColor = Trace(ray, depth + 1);
 		}
 		
-		ray.m_Direction = newOrigin;
+		ray.m_Origin = newOrigin;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
 		m_reflectionColor = Trace(ray, depth + 1);
 		
