@@ -109,7 +109,7 @@ public:
 
 	Ray ray;
 
-	int maxDepth = 3;
+	int maxDepth = 400;
 };
 
 } // namespace lh2core

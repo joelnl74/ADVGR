@@ -31,6 +31,7 @@ void RenderCore::Init()
 	sphere.m_Material.color.value.y = 0;
 	sphere.m_Material.color.value.z = 0;
 	sphere.m_Material.specular.value = 0.6;
+	sphere.m_Material.color.textureID = -1;
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
@@ -39,6 +40,7 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
+	mirrorSphere.m_Material.color.textureID = -1;
 	mirrorSphere.m_Material.specular.value = 1;
 	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
@@ -49,6 +51,7 @@ void RenderCore::Init()
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
 	glassSphere.m_Material.specular.value = 1;
+	glassSphere.m_Material.color.textureID = -1;
 	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	m_spheres.push_back(sphere);
@@ -60,7 +63,7 @@ void RenderCore::Init()
 	coreTriLight.centre = make_float3(0, 1, 3);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
-	coreTriLight.vertex0 = make_float3(-7.5, 4.5, 1.5);
+	coreTriLight.vertex0 = make_float3(-7.5, 6, 5);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
@@ -144,7 +147,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		screenPixels[i] = (blue << 16) + (green << 8) + red;
 	}
 
-
 	// copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
@@ -203,6 +205,7 @@ tuple<CoreTri*, float, float3, CoreMaterial, bool> RenderCore::Intersect(Ray ray
 				t_min = t;
 				normal = cross(vertex2, vertex1);
 				isLight = true;
+				coreMaterial.color.textureID = -1;
 			}
 		}
 	}
@@ -267,6 +270,13 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		int yPixel = float(texture.height) * vv;
 		int pixelIdx = yPixel + xPixel * texture.width;
 
+		if (pixelIdx > texture.pixelCount)
+		{
+			pixelIdx = texture.pixelCount;
+
+			printf("Warning index out of range");
+		}
+
 		auto uvColors = texture.idata[pixelIdx];
 
 		float devision = 1.0f / 255;
@@ -287,7 +297,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
 		firstTimeMatteHit++;
-		if (firstTimeMatteHit == 0 || firstTimeMatteHit == 1)
+		if (depth == 0)
 		{
 			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
 		}
@@ -296,11 +306,11 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		mainColor = BRDF;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
-		float3 target = intersectionPoint + RandomUnitSpehere * 1.0001;
+		float3 target = intersectionPoint + RandomUnitSpehere * 1.00001;
 		float3 randomDirection = RandomUnitSpehere;
 
-		ray.m_Origin = intersectionPoint;
-		ray.m_Direction = randomDirection;
+		ray.m_Origin = target;
+		ray.m_Direction = normalize(RandomUnitSpehere);
 
 		float cos_i = dot(normalVector, randomDirection);
 
