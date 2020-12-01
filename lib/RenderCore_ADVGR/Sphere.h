@@ -1,6 +1,5 @@
 #pragma once
 #include "core_api_base.h"
-#include "rendersystem.h"
 
 using namespace lighthouse2;
 class Sphere
