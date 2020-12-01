@@ -59,11 +59,11 @@ void RenderCore::Init()
 	m_spheres.push_back(glassSphere);
 
 	CoreLightTri coreTriLight{};
-	coreTriLight.area = 15;
-	coreTriLight.centre = make_float3(0, 1, 3);
+	coreTriLight.area = 5;
+	coreTriLight.centre = make_float3(0, 3, 3);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
-	coreTriLight.vertex0 = make_float3(-7.5, 6, 5);
+	coreTriLight.vertex0 = make_float3(-2.5, 6, 5);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
@@ -189,24 +189,18 @@ tuple<CoreTri*, float, float3, CoreMaterial, bool> RenderCore::Intersect(Ray ray
 
 	for (auto& light : m_coreTriLight)
 	{
-		float3 startVertex = light.vertex0;
-		float yCoordinate = startVertex.y;
+		Sphere sphere;
+		sphere.m_CenterPosition = light.centre;
+		sphere.m_Radius = light.area;
 
-		for (int i = 0; i < 2; i++)
+		float t = Utils::IntersectSphere(ray, sphere);
+
+		if (t < t_min)
 		{
-			float3 vertex0 = i == 0 ? make_float3(startVertex.x, yCoordinate, startVertex.z) : make_float3(startVertex.x + light.area, yCoordinate, startVertex.z + light.area);
-			float3 vertex1 = i == 0 ? make_float3(startVertex.x + light.area, yCoordinate, startVertex.z) : make_float3(startVertex.x, yCoordinate, startVertex.z + light.area);
-			float3 vertex2 = i == 0 ? make_float3(startVertex.x, yCoordinate, startVertex.z + light.area) : make_float3(startVertex.x + light.area, yCoordinate,  startVertex.z);
-
-			float t = Utils::IntersectTriangle(ray, vertex0, vertex1, vertex2);
-
-			if (t < t_min)
-			{
-				t_min = t;
-				normal = cross(vertex2, vertex1);
-				isLight = true;
-				coreMaterial.color.textureID = -1;
-			}
+			t_min = t;
+			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
+			isLight = true;
+			coreMaterial.color.textureID = -1;
 		}
 	}
 
@@ -289,28 +283,28 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		BRDF = mainColor * INVPI;
 		float cos_i = dot(normalVector, ray.m_Direction);
 		// Light is always white in this case
-		float3 returnedColor = PI * 2.0f * BRDF * WHITE * cos_i;
+		float3 returnedColor = PI * 2.0f * BRDF * WHITE * abs(cos_i);
 
 		return returnedColor;
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		firstTimeMatteHit++;
-		if (depth == 0)
+		if (firstTimeMatteHit == 0) 
 		{
 			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
+			updatedColor = mainColor;
 		}
 		
-		BRDF = mainColor * INVPI;
-		mainColor = BRDF;
+		BRDF = updatedColor * INVPI;
+		updatedColor = BRDF;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
 		float3 target = intersectionPoint + RandomUnitSpehere * 1.00001;
 		float3 randomDirection = RandomUnitSpehere;
 
 		ray.m_Origin = target;
-		ray.m_Direction = normalize(RandomUnitSpehere);
+		ray.m_Direction = RandomUnitSpehere;
 
 		float cos_i = dot(normalVector, randomDirection);
 
