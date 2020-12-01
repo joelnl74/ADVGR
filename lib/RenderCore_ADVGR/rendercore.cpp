@@ -311,7 +311,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (t_min != numeric_limits<float>::max())
 		{
-			return BLACK;
+			return m_color * 1;
 		}
 
 		float3 N = normalize(normal);
