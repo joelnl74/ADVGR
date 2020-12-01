@@ -291,7 +291,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 			BRDF = mainColor;
 		}
 		
-		BRDF = mainColor * INVPI;
+		BRDF = mainColor / PI;
 		mainColor = BRDF;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
