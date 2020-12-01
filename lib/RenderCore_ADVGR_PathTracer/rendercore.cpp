@@ -40,7 +40,7 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
 	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere glassSphere;
 	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
@@ -49,18 +49,19 @@ void RenderCore::Init()
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
 	glassSphere.m_Material.specular.value = 1;
-	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
+	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	m_spheres.push_back(sphere);
 	m_spheres.push_back(mirrorSphere);
 	m_spheres.push_back(glassSphere);
 
 	CoreLightTri coreTriLight{};
-	coreTriLight.area = 10;
-	coreTriLight.centre = make_float3(0, 10, -5);
+	coreTriLight.area = 15;
+	coreTriLight.centre = make_float3(5, 15, 5);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
-	
+	coreTriLight.vertex0 = make_float3(-7.5, 3, 5);
+
 	m_coreTriLight.push_back(coreTriLight);
 }
 
@@ -122,7 +123,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
 
-			screenData[x + y * SCRWIDTH] = Trace(ray, 0, x, y);
+			float3 color = screenData[x + y * SCRWIDTH];
+
+			if (color.x == 0 && color.y == 0 && color.z == 0)
+			{
+				screenData[x + y * SCRWIDTH] = Trace(ray, 0, x, y);
+			}
 		}
 	}
 
@@ -180,20 +186,23 @@ tuple<CoreTri*, float, float3, CoreMaterial, bool> RenderCore::Intersect(Ray ray
 
 	for (auto& light : m_coreTriLight)
 	{
-		Sphere sphere;
-		sphere.m_Radius = light.area;
-		sphere.m_CenterPosition = light.centre;
+		float3 startVertex = light.vertex0;
+		float yCoordinate = startVertex.y;
 
-		float t = Utils::IntersectSphere(ray, sphere);
-
-		if (t < t_min)
+		for (int i = 0; i < 2; i++)
 		{
-			t_min = t;
-			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
-			isLight = true;
-			coreMaterial.color.value.x = 1;
-			coreMaterial.color.value.y = 1;
-			coreMaterial.color.value.z = 0;
+			float3 vertex0 = i == 0 ? make_float3(startVertex.x, yCoordinate, startVertex.z) : make_float3(startVertex.x + light.area, yCoordinate, startVertex.z + light.area);
+			float3 vertex1 = i == 0 ? make_float3(startVertex.x + light.area, yCoordinate, startVertex.z) : make_float3(startVertex.x, yCoordinate, startVertex.z + light.area);
+			float3 vertex2 = i == 0 ? make_float3(startVertex.x, yCoordinate, startVertex.z + light.area) : make_float3(startVertex.x + light.area, yCoordinate,  startVertex.z);
+
+			float t = Utils::IntersectTriangle(ray, vertex0, vertex1, vertex2);
+
+			if (t < t_min)
+			{
+				t_min = t;
+				normal = cross(vertex2, vertex1);
+				isLight = true;
+			}
 		}
 	}
 
@@ -228,7 +237,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (depth > maxDepth)
 	{
-		return color;
+		return BLACK;
 	}
 
 	if (material.color.textureID > -1)
@@ -266,32 +275,35 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	if (hitLight)
 	{
 		// Calculate emittance
-		float3 BRDF = mainColor / PI;
-		float cos_i = dot(ray.m_Direction, normalVector);
+		BRDF = mainColor / PI;
+		float cos_i = dot(normalVector, ray.m_Direction);
 		// Light is always white in this case
-		float3 returnedColor = PI * 2.0f * BRDF * WHITE * abs(cos_i);
+		float3 returnedColor = PI * 2.0f * BRDF * WHITE * cos_i;
 
 		return returnedColor;
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		// BRDF = color * INVPI;
-		mainColor = color;
+		if (depth == 0)
+		{
+			mainColor = color;
+			BRDF = mainColor;
+		}
 		
-		float3 BRDF = mainColor / PI;
+		BRDF = mainColor / PI;
+		mainColor = BRDF;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
 		float3 target = intersectionPoint + normalVector + RandomUnitSpehere;
-		float3 attenuation = color;
+		float3 randomDirection = normalize(target - intersectionPoint);
 
-		//ray.m_Origin = intersectionPoint;
-		//ray.m_Direction = normalize(target - intersectionPoint);
-		float3 randomD = normalize(target - intersectionPoint);
-		Ray r(intersectionPoint, randomD);
-		float cos_i = dot(normalVector, randomD);
+		ray.m_Origin = intersectionPoint;
+		ray.m_Direction = randomDirection;
 
-		auto Ei = Trace(r, depth + 1);
+		float cos_i = dot(normalVector, randomDirection);
+
+		auto Ei = Trace(ray, depth + 1);
 
 		return PI * 2.0f * BRDF * Ei * cos_i;
 	}

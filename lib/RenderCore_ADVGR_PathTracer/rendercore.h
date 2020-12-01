@@ -84,6 +84,7 @@ public:
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 
 	float3 mainColor;
+	float3 BRDF;
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;
@@ -106,7 +107,7 @@ public:
 
 	Ray ray;
 
-	int maxDepth = 100;
+	int maxDepth = 1;
 };
 
 } // namespace lh2core
