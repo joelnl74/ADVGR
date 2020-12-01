@@ -31,7 +31,7 @@ void RenderCore::Init()
 	sphere.m_Material.color.value.y = 0;
 	sphere.m_Material.color.value.z = 0;
 	sphere.m_Material.specular.value = 0.75;
-	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
+	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
 
 	Sphere mirrorSphere;
 	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.3, 6);
@@ -49,7 +49,7 @@ void RenderCore::Init()
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
 	glassSphere.m_Material.specular.value = 1;
-	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
+	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	m_spheres.push_back(sphere);
 	m_spheres.push_back(mirrorSphere);
@@ -311,7 +311,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (t_min != numeric_limits<float>::max())
 		{
-			return m_color * 1;
+			return m_color * 0.1;
 		}
 
 		float3 N = normalize(normal);

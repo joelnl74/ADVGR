@@ -1,5 +1,5 @@
 # Blender MTL File: 'simple_scene.blend'
-# Material Count: 8
+# Material Count: 6
 
 newmtl Ground
 Ns 225.000000
@@ -24,14 +24,14 @@ illum 2
 map_Kd checkerboard-pattern.jpg
 
 newmtl Ground.002
-Ns 225.000000
+Ns 900.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.540365 0.800000 0.193548
-Ks 0.500000 0.500000 0.500000
+Ks 0.000000 0.000000 0.000000
 Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
-illum 2
+illum 1
 map_Kd checkerboard-pattern.jpg
 
 newmtl Ground.003
@@ -46,28 +46,6 @@ illum 2
 map_Kd checkerboard-pattern.jpg
 
 newmtl Ground.004
-Ns 225.000000
-Ka 1.000000 1.000000 1.000000
-Kd 0.540365 0.800000 0.193548
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.450000
-d 1.000000
-illum 2
-map_Kd checkerboard-pattern.jpg
-
-newmtl Ground.005
-Ns 225.000000
-Ka 1.000000 1.000000 1.000000
-Kd 0.540365 0.800000 0.193548
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.450000
-d 1.000000
-illum 2
-map_Kd checkerboard-pattern.jpg
-
-newmtl Ground.006
 Ns 225.000000
 Ka 1.000000 1.000000 1.000000
 Kd 0.540365 0.800000 0.193548
