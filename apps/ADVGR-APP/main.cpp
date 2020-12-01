@@ -38,7 +38,7 @@ void PrepareScene()
 	// initialize scene
 	int boxScene = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.05f);
 	renderer->AddInstance(boxScene);
-	renderer->AddPointLight(make_float3(0, 0.25, 0), 50 * make_float3(10, 10, 10));
+	renderer->AddPointLight(make_float3(0, 15, 8), 50 * make_float3(10, 10, 10));
 	// renderer->AddDirectionalLight(make_float3(0, 20, 0), make_float3(10, 10, 10));
 
 	auto scene = renderer->GetScene();
@@ -98,8 +98,8 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
-	renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR_PathTracer");
-	// renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR");
+	// renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR_PathTracer");
+	renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR");
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene

@@ -25,7 +25,7 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-2, -0.05, 6);
+	sphere.m_CenterPosition = make_float3(-2, 0, 6);
 	sphere.m_Radius = 1;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
@@ -34,16 +34,16 @@ void RenderCore::Init()
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.05, 6);
+	mirrorSphere.m_CenterPosition = make_float3(0.0, 0, 6);
 	mirrorSphere.m_Radius = 1;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
 	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(2, -0.05, 6);
+	glassSphere.m_CenterPosition = make_float3(2, 0, 6);
 	glassSphere.m_Radius = 1;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
@@ -297,7 +297,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
 		float3 target = intersectionPoint + RandomUnitSpehere * 1.0001;
-		float3 randomDirection = normalize(RandomUnitSpehere);
+		float3 randomDirection = RandomUnitSpehere;
 
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = randomDirection;
@@ -315,10 +315,10 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
 
-		/*if (depth == 0)
+		if (depth == 0)
 		{
 			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
-		}*/
+		}
 
 		return Trace(ray, depth + 1);
 	}
@@ -345,7 +345,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 			m_refractionColor = Trace(ray, depth + 1);
 		}
 		
-		ray.m_Direction = newOrigin;
+		ray.m_Origin = newOrigin;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
 		m_reflectionColor = Trace(ray, depth + 1);
 		

@@ -25,8 +25,8 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-0.6, -0.4, 2);
-	sphere.m_Radius = 0.2;
+	sphere.m_CenterPosition = make_float3(-2, -0.3, 6);
+	sphere.m_Radius = 1;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
 	sphere.m_Material.color.value.z = 0;
@@ -34,8 +34,8 @@ void RenderCore::Init()
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.4, 2);
-	mirrorSphere.m_Radius = 0.2;
+	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.3, 6);
+	mirrorSphere.m_Radius = 1;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
@@ -43,8 +43,8 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
-	glassSphere.m_Radius = 0.2;
+	glassSphere.m_CenterPosition = make_float3(2, -0.3, 6);
+	glassSphere.m_Radius = 1;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
@@ -299,8 +299,11 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 	for (CorePointLight& light : m_pointLights)
 	{
 		float3 direction = light.position - origin;
+		float distanceToLight = length(direction);
 
-		Ray shadowRay = Ray(origin, normalize(direction));
+		Ray shadowRay;
+		shadowRay.m_Origin = origin;
+		shadowRay.m_Direction = normalize(direction);
 
 		tuple intersect = Intersect(shadowRay);
 
@@ -308,7 +311,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (t_min != numeric_limits<float>::max())
 		{
-			return m_color * 0.1;
+			return BLACK;
 		}
 
 		float3 N = normalize(normal);
@@ -325,7 +328,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		float specular = 0;
 
 		// Diffuse coefficient.
-		float kd = 0.8;
+		float kd = 1.0f;
 		// Ambient reflection
 		float ka = 1.0f;
 		// Ambient reflection.
@@ -346,13 +349,13 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 				specAngle = 0;
 			}
 
-			specular = pow(specAngle, 75);
+			specular = pow(specAngle, 90);
 		}
 
 		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-	return color / lightSourceCount;
+	return color / 1;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
@@ -417,7 +420,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 	// copy the supplied array of materials
 	for (int i = 0; i < materialCount; i++) {
-		CoreMaterial mat;
+		CoreMaterial mat{};
 
 		float3 color = make_float3(material[i].color.value.x, material[i].color.value.y, material[i].color.value.z);
 		mat.color.value.x = color.x;
