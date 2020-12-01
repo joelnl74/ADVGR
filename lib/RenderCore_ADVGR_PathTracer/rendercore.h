@@ -84,6 +84,7 @@ public:
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 
 	float3 mainColor;
+	float3 updatedColor;
 	float3 BRDF;
 	float3 Ei;
 	float firstTimeMatteHit = 0;
@@ -109,7 +110,7 @@ public:
 
 	Ray ray;
 
-	int maxDepth = 400;
+	int maxDepth = 24;
 };
 
 } // namespace lh2core

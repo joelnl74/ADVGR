@@ -60,10 +60,7 @@ void RenderCore::Init()
 
 	CoreLightTri coreTriLight{};
 	coreTriLight.area = 5;
-	coreTriLight.centre = make_float3(0, 3, 3);
-	coreTriLight.energy = 500;
-	coreTriLight.radiance = make_float3(1, 1, 1);
-	coreTriLight.vertex0 = make_float3(-2.5, 6, 5);
+	coreTriLight.centre = make_float3(0, 8, 3);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
