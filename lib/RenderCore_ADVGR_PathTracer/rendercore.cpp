@@ -25,7 +25,7 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-0.65, -0.6, 2.5);
+	sphere.m_CenterPosition = make_float3(-0.65, -0.55, 2.5);
 	sphere.m_Radius = 0.3;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
@@ -34,7 +34,7 @@ void RenderCore::Init()
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.6, 2.5);
+	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.55, 2.5);
 	mirrorSphere.m_Radius = 0.3;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
@@ -43,7 +43,7 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(0.65, -0.6, 2.5);
+	glassSphere.m_CenterPosition = make_float3(0.65, -0.55, 2.5);
 	glassSphere.m_Radius = 0.3;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
@@ -57,10 +57,10 @@ void RenderCore::Init()
 
 	CoreLightTri coreTriLight{};
 	coreTriLight.area = 15;
-	coreTriLight.centre = make_float3(5, 15, 5);
+	coreTriLight.centre = make_float3(0, 1, 3);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
-	coreTriLight.vertex0 = make_float3(-7.5, 3, -7.5);
+	coreTriLight.vertex0 = make_float3(-7.5, 3.5, 3);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
@@ -275,7 +275,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	if (hitLight)
 	{
 		// Calculate emittance
-		BRDF = mainColor / PI;
+		BRDF = mainColor * INVPI;
 		float cos_i = dot(normalVector, ray.m_Direction);
 		// Light is always white in this case
 		float3 returnedColor = PI * 2.0f * BRDF * WHITE * cos_i;
@@ -287,15 +287,15 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	{
 		if (depth == 0)
 		{
-			mainColor = color;
+			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
 			BRDF = mainColor;
 		}
 		
-		BRDF = mainColor / PI;
+		BRDF = mainColor * INVPI;
 		mainColor = BRDF;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
-		float3 target = intersectionPoint + normalVector + RandomUnitSpehere;
+		float3 target = intersectionPoint + RandomUnitSpehere + normalVector;
 		float3 randomDirection = normalize(target - intersectionPoint);
 
 		ray.m_Origin = intersectionPoint;
@@ -303,9 +303,11 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		float cos_i = dot(normalVector, randomDirection);
 
-		auto Ei = Trace(ray, depth + 1);
+		Ei = Trace(ray, depth + 1) * cos_i;
 
-		return PI * 2.0f * BRDF * Ei * cos_i;
+		color = PI * 2.0f * BRDF * Ei;
+
+		return color;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -352,7 +354,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	return color;
 }
 
-float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
+float3 RenderCore::CalculatePhong(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
 {
 	float3 color = make_float3(0, 0, 0);
 	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
@@ -360,19 +362,6 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 	for (CoreLightTri& light : m_coreTriLight)
 	{
 		float3 direction = light.centre - origin;
-
-		Ray shadowRay = Ray(origin, normalize(direction));
-
-		tuple intersect = Intersect(shadowRay);
-
-		float t_min = get<1>(intersect);
-
-		if (t_min != numeric_limits<float>::max())
-		{
-			color += m_color * 0.0;
-
-			continue;
-		}
 
 		float3 N = normalize(normal);
 		float3 L = normalize(light.centre - origin);
@@ -388,7 +377,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		float specular = 0;
 
 		// Diffuse coeficient.
-		float kd = 0.8;
+		float kd = 1;
 		// Ambient reflection
 		float ka = 1.0f;
 		// Specular reflection.
@@ -415,7 +404,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-	return color / lightSourceCount;
+	return color / 1;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
