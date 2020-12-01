@@ -34,20 +34,28 @@ public:
     {
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::mt19937 generator(seed);
-        std::uniform_real_distribution<double> uniform01(0.0, 1.0);
+        std::uniform_real_distribution<double> uniform01(-1.0, 1.0);
 
         return uniform01(generator);
     }
 
     static float3 RandomInUnitSphere()
     {
-        double theta = 2 * PI * RandomFloat();
-        double phi = acos(1 - 2 * RandomFloat());
-        double x = sin(phi) * cos(theta);
-        double y = sin(phi) * sin(theta);
-        double z = cos(phi);
+        while (true)
+        {
+            float x = RandomFloat();
+            float y = RandomFloat();
+            float z = RandomFloat();
 
-        return make_float3(x, y, z);
+            float3 p = make_float3(x, y, z);
+
+            if (sqrlength(p) >= 1)
+            {
+                continue;
+            }
+
+            return p;
+        }
     }
 
     static float IntersectTriangle(Ray ray, float3 p0, float3 p1, float3 p2)

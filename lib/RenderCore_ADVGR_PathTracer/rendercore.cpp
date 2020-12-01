@@ -25,50 +25,44 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-0.6, -0.4, 2);
-	sphere.m_Radius = 0.2;
+	sphere.m_CenterPosition = make_float3(-2, 0, 6);
+	sphere.m_Radius = 1;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
 	sphere.m_Material.color.value.z = 0;
-	sphere.m_Material.specular.value = 0.75;
+	sphere.m_Material.specular.value = 0.6;
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.4, 2);
-	mirrorSphere.m_Radius = 0.2;
+	mirrorSphere.m_CenterPosition = make_float3(0.0, 0, 6);
+	mirrorSphere.m_Radius = 1;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
 	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
-	glassSphere.m_Radius = 0.2;
+	glassSphere.m_CenterPosition = make_float3(2, 0, 6);
+	glassSphere.m_Radius = 1;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
 	glassSphere.m_Material.specular.value = 1;
-	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
+	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	m_spheres.push_back(sphere);
 	m_spheres.push_back(mirrorSphere);
 	m_spheres.push_back(glassSphere);
 
 	CoreLightTri coreTriLight{};
-	coreTriLight.area = 10;
-	coreTriLight.centre = make_float3(-1, 1, 0);
+	coreTriLight.area = 15;
+	coreTriLight.centre = make_float3(0, 1, 3);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
+	coreTriLight.vertex0 = make_float3(-7.5, 4.5, 1.5);
 
-	CoreLightTri coreTriLight2{};
-	coreTriLight2.area = 10;
-	coreTriLight2.centre = make_float3(1, 1, 0);
-	coreTriLight2.energy = 500;
-	coreTriLight2.radiance = make_float3(1, 1, 1);
-	
 	m_coreTriLight.push_back(coreTriLight);
-	m_coreTriLight.push_back(coreTriLight2);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -128,8 +122,14 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			ray.t = INT_MAX;
 			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
+			firstTimeMatteHit = 0;
 
-			screenData[x + y * SCRWIDTH] = Trace(ray, 0, x, y);
+			float3 color = screenData[x + y * SCRWIDTH];
+
+			if (color.x == 0 && color.y == 0 && color.z == 0)
+			{
+				screenData[x + y * SCRWIDTH] = Trace(ray, 0, x, y);
+			}
 		}
 	}
 
@@ -187,37 +187,27 @@ tuple<CoreTri*, float, float3, CoreMaterial, bool> RenderCore::Intersect(Ray ray
 
 	for (auto& light : m_coreTriLight)
 	{
-		Sphere sphere;
-		sphere.m_Radius = light.area;
-		sphere.m_CenterPosition = light.centre;
+		float3 startVertex = light.vertex0;
+		float yCoordinate = startVertex.y;
 
-		float t = Utils::IntersectSphere(ray, sphere);
-
-		if (t < t_min)
+		for (int i = 0; i < 2; i++)
 		{
-			t_min = t;
-			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
-			isLight = true;
-			coreMaterial.color.value.x = 255;
-			coreMaterial.color.value.y = 255;
-			coreMaterial.color.value.z = 0;
+			float3 vertex0 = i == 0 ? make_float3(startVertex.x, yCoordinate, startVertex.z) : make_float3(startVertex.x + light.area, yCoordinate, startVertex.z + light.area);
+			float3 vertex1 = i == 0 ? make_float3(startVertex.x + light.area, yCoordinate, startVertex.z) : make_float3(startVertex.x, yCoordinate, startVertex.z + light.area);
+			float3 vertex2 = i == 0 ? make_float3(startVertex.x, yCoordinate, startVertex.z + light.area) : make_float3(startVertex.x + light.area, yCoordinate,  startVertex.z);
+
+			float t = Utils::IntersectTriangle(ray, vertex0, vertex1, vertex2);
+
+			if (t < t_min)
+			{
+				t_min = t;
+				normal = cross(vertex2, vertex1);
+				isLight = true;
+			}
 		}
 	}
 
 	return make_tuple(tri, t_min, normal, coreMaterial, isLight);
-}
-
-bool lh2core::RenderCore::Scatter(Ray ray, CoreMaterial& material, float3 &color, float3& intersectionPoint, float3& normal)
-{
-	int lightSourceCount = m_coreTriLight.size();
-
-	float3 target = intersectionPoint + normal + Utils::RandomInUnitSphere();
-	float3 attenuation = color;
-
-	ray.m_Origin = intersectionPoint;
-	ray.m_Direction = normalize(target - intersectionPoint);
-
-	return false;
 }
 
 float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
@@ -226,30 +216,16 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	float t_min = get<1>(intersect);
 	float3 normalVector = get<2>(intersect);
-	bool hitLight = get<4>(intersect);
 	CoreMaterial material = get<3>(intersect);
+	bool hitLight = get<4>(intersect);
 
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
-	if (hitLight)
-	{
-		Ray random;
-		float3 target = intersectionPoint + normalVector + Utils::RandomInUnitSphere();
-		float3 attenuation = color;
-
-		// Random point on the hemisphere
-		random.m_Origin = intersectionPoint;
-		random.m_Direction = normalize(target - intersectionPoint);
-
-		CoreMaterial material = get<3>(intersect);
-		float3 BRDF = material.color.value * INVPI;
-		float cos_i = dot(random.m_Direction, normalVector);
-		return 2.0f * PI * BRDF * make_float3(1, 1, 1) * cos_i;
-	}
-
 	if (t_min == numeric_limits<float>::max())
 	{
+		return BLACK;
+
 		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
 		float v = acosf(ray.m_Direction.y) * INVPI;
 
@@ -258,6 +234,11 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		int pixelIdx = yPixel * skyWidth + xPixel;
 
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
+	}
+
+	if (depth > maxDepth)
+	{
+		return BLACK;
 	}
 
 	if (material.color.textureID > -1)
@@ -291,25 +272,55 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		float devision = 1.0f / 255;
 		color = make_float3(uvColors.x * devision, uvColors.y * devision, uvColors.z * devision);
 	}
-	
-	if (depth > maxDepth)
+
+	if (hitLight)
 	{
-		return color;
+		// Calculate emittance
+		BRDF = mainColor * INVPI;
+		float cos_i = dot(normalVector, ray.m_Direction);
+		// Light is always white in this case
+		float3 returnedColor = PI * 2.0f * BRDF * WHITE * cos_i;
+
+		return returnedColor;
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
+		firstTimeMatteHit++;
+		if (firstTimeMatteHit == 0 || firstTimeMatteHit == 1)
+		{
+			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
+		}
+		
+		BRDF = mainColor * INVPI;
+		mainColor = BRDF;
+		
+		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
+		float3 target = intersectionPoint + RandomUnitSpehere * 1.0001;
+		float3 randomDirection = RandomUnitSpehere;
+
+		ray.m_Origin = intersectionPoint;
+		ray.m_Direction = randomDirection;
+
+		float cos_i = dot(normalVector, randomDirection);
+
+		Ei = Trace(ray, depth + 1) * cos_i;
+
+		color = PI * 2.0f * BRDF * Ei;
+
+		return color;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
 
-		float3 m_reflectedColor = color;
-		m_reflectedColor = Trace(ray, depth + 1);
+		if (depth == 0)
+		{
+			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
+		}
 
-		return m_reflectedColor;
+		return Trace(ray, depth + 1);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
@@ -346,7 +357,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	return color;
 }
 
-float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
+float3 RenderCore::CalculatePhong(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
 {
 	float3 color = make_float3(0, 0, 0);
 	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
@@ -354,19 +365,6 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 	for (CoreLightTri& light : m_coreTriLight)
 	{
 		float3 direction = light.centre - origin;
-
-		Ray shadowRay = Ray(origin, normalize(direction));
-
-		tuple intersect = Intersect(shadowRay);
-
-		float t_min = get<1>(intersect);
-
-		if (t_min != numeric_limits<float>::max())
-		{
-			color += m_color * 0.0;
-
-			continue;
-		}
 
 		float3 N = normalize(normal);
 		float3 L = normalize(light.centre - origin);
@@ -382,7 +380,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		float specular = 0;
 
 		// Diffuse coeficient.
-		float kd = 0.8;
+		float kd = 1;
 		// Ambient reflection
 		float ka = 1.0f;
 		// Specular reflection.
@@ -409,7 +407,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-	return color / lightSourceCount;
+	return color / 1;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)

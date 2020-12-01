@@ -59,8 +59,7 @@ public:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
 	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
 	tuple<CoreTri*, float, float3, CoreMaterial, bool> Intersect(Ray ray);
-	bool Scatter(Ray ray, CoreMaterial &material, float3 &color, float3 &intersectionPoint, float3 &normal);
-	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
+	float3 CalculatePhong(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
 	float3 Reflect(float3& in, float3 normal);
 	float3 Refract(float3& in, float3& normal, float ior);
 	float Fresnel(float3& in, float3& normal, float ior);
@@ -83,6 +82,11 @@ public:
 	CoreStats coreStats;							// rendering statistics
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
+
+	float3 mainColor;
+	float3 BRDF;
+	float3 Ei;
+	float firstTimeMatteHit = 0;
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;
