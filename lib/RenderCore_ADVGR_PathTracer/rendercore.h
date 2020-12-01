@@ -86,6 +86,7 @@ public:
 	float3 mainColor;
 	float3 BRDF;
 	float3 Ei;
+	float firstTimeMatteHit = 0;
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;

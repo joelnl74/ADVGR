@@ -122,6 +122,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			ray.t = INT_MAX;
 			ray.m_Origin = view.pos;
 			ray.m_Direction = direction;
+			firstTimeMatteHit = 0;
 
 			float3 color = screenData[x + y * SCRWIDTH];
 
@@ -285,13 +286,13 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		if (depth == 0)
+		firstTimeMatteHit++;
+		if (firstTimeMatteHit == 0 || firstTimeMatteHit == 1)
 		{
 			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
-			BRDF = mainColor;
 		}
 		
-		BRDF = mainColor / PI;
+		BRDF = mainColor * INVPI;
 		mainColor = BRDF;
 		
 		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
@@ -314,12 +315,12 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
 
-		if (depth == 0)
+		/*if (depth == 0)
 		{
 			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
-		}
+		}*/
 
-		return mainColor * Trace(ray, depth + 1);
+		return Trace(ray, depth + 1);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
