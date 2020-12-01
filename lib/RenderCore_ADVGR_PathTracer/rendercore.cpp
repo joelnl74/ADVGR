@@ -25,17 +25,17 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-0.6, -0.4, 2);
-	sphere.m_Radius = 0.2;
+	sphere.m_CenterPosition = make_float3(-0.65, -0.6, 2.5);
+	sphere.m_Radius = 0.3;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
 	sphere.m_Material.color.value.z = 0;
-	sphere.m_Material.specular.value = 0.75;
+	sphere.m_Material.specular.value = 0.6;
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.4, 2);
-	mirrorSphere.m_Radius = 0.2;
+	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.6, 2.5);
+	mirrorSphere.m_Radius = 0.3;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
@@ -43,8 +43,8 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(0.6, -0.4, 2);
-	glassSphere.m_Radius = 0.2;
+	glassSphere.m_CenterPosition = make_float3(0.65, -0.6, 2.5);
+	glassSphere.m_Radius = 0.3;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
@@ -60,7 +60,7 @@ void RenderCore::Init()
 	coreTriLight.centre = make_float3(5, 15, 5);
 	coreTriLight.energy = 500;
 	coreTriLight.radiance = make_float3(1, 1, 1);
-	coreTriLight.vertex0 = make_float3(-7.5, 3, 5);
+	coreTriLight.vertex0 = make_float3(-7.5, 3, -7.5);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
