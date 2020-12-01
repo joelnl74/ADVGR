@@ -40,7 +40,7 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
 	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 
 	Sphere glassSphere;
 	glassSphere.m_CenterPosition = make_float3(2, -0.05, 6);
@@ -314,10 +314,12 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
 
-		float3 m_reflectedColor = color;
-		m_reflectedColor = Trace(ray, depth + 1);
+		if (depth == 0)
+		{
+			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
+		}
 
-		return m_reflectedColor;
+		return mainColor * Trace(ray, depth + 1);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
