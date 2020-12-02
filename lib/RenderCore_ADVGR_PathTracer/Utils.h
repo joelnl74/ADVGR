@@ -43,9 +43,13 @@ public:
     {
         while (true)
         {
-            float x2 = RandomFloat() * 2;
-            float y2 = RandomFloat() * 2;
-            float z2 = RandomFloat() * 2;
+            float x = RandomFloat();
+            float y = RandomFloat();
+            float z = RandomFloat();
+
+            float x2 = x * x;
+            float y2 = y * y;
+            float z2 = z * z;
 
             float p = x2 + y2 + z2;
 
