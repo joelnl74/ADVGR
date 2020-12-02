@@ -29,6 +29,8 @@ static CoreStats coreStats;
 #include "main_tools.h"
 #include "UI.h"
 
+bool PathTracer = false;
+
 //  +-----------------------------------------------------------------------------+
 //  |  PrepareScene                                                               |
 //  |  Initialize a scene.                                                  LH2'19|
@@ -36,10 +38,19 @@ static CoreStats coreStats;
 void PrepareScene()
 {
 	// initialize scene
-	int boxScene = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.05f);
-	renderer->AddInstance(boxScene);
+	int sceneMesh = 0;
+
+	if (PathTracer)
+	{
+		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene_2.obj", 0.05f);
+	}
+	else
+	{
+		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.05f);
+	}
+
+	renderer->AddInstance(sceneMesh);
 	renderer->AddPointLight(make_float3(0, 15, 8), 50 * make_float3(10, 10, 10));
-	// renderer->AddDirectionalLight(make_float3(0, 20, 0), make_float3(10, 10, 10));
 
 	auto scene = renderer->GetScene();
 	auto sky = new HostSkyDome();
@@ -98,8 +109,14 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR_PathTracer");
-	renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR");
+	if (PathTracer)
+	{
+		renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR_PathTracer");
+	}
+	else
+	{
+		renderer = RenderAPI::CreateRenderAPI("RenderCore_ADVGR");
+	}
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
