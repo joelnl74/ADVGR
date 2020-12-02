@@ -39,15 +39,13 @@ public:
         return uniform01(generator);
     }
 
-    static float3 RandomInUnitSphere(float3 &normal)
+    static float3 RandomPointOnHemiSphere(float3 &normal)
     {
         while (true)
         {
             float x2 = RandomFloat() * 2;
             float y2 = RandomFloat() * 2;
             float z2 = RandomFloat() * 2;
-
-
 
             float p = x2 + y2 + z2;
 
@@ -60,8 +58,9 @@ public:
 
             if (dot(D, normal) < 0)
             {
-
+                D = make_float3(z2, y2, x2);
             }
+
             return D;
         }
     }

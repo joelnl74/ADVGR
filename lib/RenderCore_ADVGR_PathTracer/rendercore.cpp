@@ -296,7 +296,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		BRDF = updatedColor * INVPI;
 		updatedColor = BRDF;
 		
-		float3 D = Utils::RandomInUnitSphere(normalVector);
+		float3 D = Utils::RandomPointOnHemiSphere(normalVector);
 		float3 target = intersectionPoint + 1.00001 * D;
 		float3 randomDirection = D;
 
