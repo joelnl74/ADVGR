@@ -39,22 +39,30 @@ public:
         return uniform01(generator);
     }
 
-    static float3 RandomInUnitSphere()
+    static float3 RandomInUnitSphere(float3 &normal)
     {
         while (true)
         {
-            float x = RandomFloat();
-            float y = RandomFloat();
-            float z = RandomFloat();
+            float x2 = RandomFloat() * 2;
+            float y2 = RandomFloat() * 2;
+            float z2 = RandomFloat() * 2;
 
-            float3 p = make_float3(x, y, z);
 
-            if (sqrlength(p) >= 1)
+
+            float p = x2 + y2 + z2;
+
+            if (p <= 1)
             {
                 continue;
             }
 
-            return p;
+            float3 D = normalize(make_float3(x2, y2, z2));
+
+            if (dot(D, normal) < 0)
+            {
+
+            }
+            return D;
         }
     }
 
