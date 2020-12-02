@@ -296,12 +296,12 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		BRDF = updatedColor * INVPI;
 		updatedColor = BRDF;
 		
-		float3 RandomUnitSpehere = Utils::RandomInUnitSphere();
-		float3 target = intersectionPoint + RandomUnitSpehere * 1.00001;
-		float3 randomDirection = RandomUnitSpehere;
+		float3 D = Utils::RandomPointOnHemiSphere(normalVector);
+		float3 target = intersectionPoint + 1.00001 * D;
+		float3 randomDirection = D;
 
 		ray.m_Origin = target;
-		ray.m_Direction = RandomUnitSpehere;
+		ray.m_Direction = D;
 
 		float cos_i = dot(normalVector, randomDirection);
 
