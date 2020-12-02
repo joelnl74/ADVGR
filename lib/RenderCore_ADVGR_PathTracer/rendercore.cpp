@@ -287,7 +287,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		if (firstTimeMatteHit == 0) 
+		/*if (firstTimeMatteHit == 0) 
 		{
 			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
 			updatedColor = mainColor;
@@ -309,7 +309,9 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		color = PI * 2.0f * BRDF * Ei;
 
-		return color;
+		return color;*/
+
+		return CalculatePhong(intersectionPoint, normalVector, color, material);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -360,55 +362,71 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 float3 RenderCore::CalculatePhong(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
 {
-	float3 color = make_float3(0, 0, 0);
-	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
-
-	for (CoreLightTri& light : m_coreTriLight)
-	{
-		float3 direction = light.centre - origin;
-
-		float3 N = normalize(normal);
-		float3 L = normalize(light.centre - origin);
-
-		float lambertian = dot(N, L);
-
-		if (lambertian < 0)
-		{
-			lambertian = 0;
-		}
-
-		float specAngle = 0;
-		float specular = 0;
-
-		// Diffuse coeficient.
-		float kd = 1;
-		// Ambient reflection
-		float ka = 1.0f;
-		// Specular reflection.
-		float ks = 1.0f;
-		// Ambient influence.
-		float ambient = 0.1;
-
-		if (lambertian > 0)
-		{
-			float3 R = reflect(-L, N);      // Reflected light vector
-			float3 V = normalize(-origin); // Vector to viewer
-
-			// Compute the specular term
-			float specAngle = dot(R, V);
-
-			if (specAngle < 0)
-			{
-				specAngle = 0;
-			}
-
-			specular = pow(specAngle, 75);
-		}
-
-		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
+	float3 directLighting = BLACK;
+	float3 lightDirection, lightIntensity;
+	for (CoreLightTri& light : m_coreTriLight) {
+		lightDirection = (origin - light.centre);
+		float3 r2 = normalize(lightDirection);
+		float distance = length(lightDirection);
+		lightDirection.x /= distance;
+		lightDirection.y /= distance;
+		lightDirection.z /= distance;
+		// 1 here is intensity
+		lightIntensity = WHITE * 1 / (4 * PI * r2);
 	}
 
-	return color / 1;
+	directLighting = lightIntensity * max(0.f, dot(normal, -lightDirection));
+	return (directLighting / PI) * m_color;
+
+	//float3 color = make_float3(0, 0, 0);
+	//int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
+
+	//for (CoreLightTri& light : m_coreTriLight)
+	//{
+	//	float3 direction = light.centre - origin;
+
+	//	float3 N = normalize(normal);
+	//	float3 L = normalize(light.centre - origin);
+
+	//	float lambertian = dot(N, L);
+
+	//	if (lambertian < 0)
+	//	{
+	//		lambertian = 0;
+	//	}
+
+	//	float specAngle = 0;
+	//	float specular = 0;
+
+	//	// Diffuse coeficient.
+	//	float kd = 1;
+	//	// Ambient reflection
+	//	float ka = 1.0f;
+	//	// Specular reflection.
+	//	float ks = 1.0f;
+	//	// Ambient influence.
+	//	float ambient = 0.1;
+
+	//	if (lambertian > 0)
+	//	{
+	//		float3 R = reflect(-L, N);      // Reflected light vector
+	//		float3 V = normalize(-origin); // Vector to viewer
+
+	//		// Compute the specular term
+	//		float specAngle = dot(R, V);
+
+	//		if (specAngle < 0)
+	//		{
+	//			specAngle = 0;
+	//		}
+
+	//		specular = pow(specAngle, 75);
+	//	}
+
+	//	color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
+	//}
+
+	//return color / 1;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)

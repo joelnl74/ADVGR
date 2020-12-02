@@ -100,4 +100,32 @@ public:
 
         return numeric_limits<float>::max();
     }
+
+    static float3 createCoordinateSystem(float3 N) {
+        float3 Nt, Nb;
+        if (fabs(N.x) > fabs(N.y)) {
+            Nt = make_float3(N.z, 0, -N.x) / sqrtf(N.x * N.x + N.z * N.z);
+        }
+        else {
+            Nt = make_float3(0, -N.z, N.y) / sqrtf(N.y * N.z * N.z);
+        }
+        Nb = cross(N, Nt);
+
+        return Nt, Nb;
+    }
+
+    static float3 uniformSampleHemisphere() {
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::mt19937 generator(seed);
+        std::uniform_real_distribution<double> uniform01(0, 1.0);
+
+        float r1 = uniform01(generator);
+        float r2 = uniform01(generator);
+
+        float sinTheta = sqrtf(1 - r1 * r1);
+        float phi = 2 * PI * r2;
+        float x = sinTheta * cosf(phi);
+        float z = sinTheta * sinf(phi);
+        return make_float3(x, r1, z);
+    }
 };
