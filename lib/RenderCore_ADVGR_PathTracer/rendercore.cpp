@@ -59,8 +59,8 @@ void RenderCore::Init()
 	m_spheres.push_back(glassSphere);
 
 	CoreLightTri coreTriLight{};
-	coreTriLight.area = 6;
-	coreTriLight.centre = make_float3(0, 8, 3);
+	coreTriLight.area = 5;
+	coreTriLight.centre = make_float3(0, 7, 6);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
@@ -295,7 +295,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		updatedColor = BRDF;
 		
 		float3 D = Utils::RandomPointOnHemiSphere(normalVector);
-		float3 target = intersectionPoint + 1.00001 * D;
+		float3 target = intersectionPoint + EPSILON * D;
 		float3 randomDirection = D;
 
 		ray.m_Origin = target;
