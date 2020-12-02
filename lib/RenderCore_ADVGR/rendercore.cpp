@@ -102,24 +102,34 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	float dx = 1.0f / (SCRWIDTH - 1);
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
+	// For anti aliasing
+	float samplingRate = 50;
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_real_distribution<> dist(0, 1);
+
 	for (int y = 0; y < SCRHEIGHT; y++)
 	{
 		for (int x = 0; x < SCRWIDTH; x++)
 		{
-			// Screen Width
-			float3 sx = x * dx * (view.p2 - view.p1);
-			// Screen Height
-			float3 sy = y * dy * (view.p3 - view.p1);
-			// Point on the screen
-			float3 point = view.p1 + sx + sy;
-			// Direction
-			float3 direction = normalize(point - view.pos);
+			for (int s = 0; s < samplingRate; s++)
+			{
+				// screen width
+				float3 sx = (x + dist(gen)) * dx * (view.p2 - view.p1);
+				// screen height
+				float3 sy = (y + dist(gen)) * dy * (view.p3 - view.p1);
+				// point on the screen
+				float3 point = view.p1 + sx + sy;
+				// direction
+				float3 direction = normalize(point - view.pos);
 
-			ray.t = INT_MAX;
-			ray.m_Origin = view.pos;
-			ray.m_Direction = direction;
+				ray.t = INT_MAX;
+				ray.m_Origin = view.pos;
+				ray.m_Direction = direction;
 
-			screenData[x + y * SCRWIDTH] = Trace(ray, 0, x, y);
+				screenData[x + y * SCRWIDTH] += Trace(ray, 0, x, y);
+			}
+			screenData[x + y * SCRWIDTH] /= float(samplingRate);
 		}
 	}
 
