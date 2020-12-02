@@ -60,7 +60,7 @@ void RenderCore::Init()
 
 	CoreLightTri coreTriLight{};
 	coreTriLight.area = 5;
-	coreTriLight.centre = make_float3(0, 7, 6);
+	coreTriLight.centre = make_float3(0, 8, 3);
 
 	m_coreTriLight.push_back(coreTriLight);
 }
@@ -303,7 +303,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		float cos_i = dot(normalVector, randomDirection);
 
-		Ei = Trace(ray, depth + 1) * cos_i;
+		Ei = Trace(ray, depth + 1) * abs(cos_i);
 
 		color = PI * 2.0f * BRDF * Ei;
 
