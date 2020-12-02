@@ -59,10 +59,10 @@ public:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
 	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
 	tuple<CoreTri*, float, float3, CoreMaterial, bool> Intersect(Ray ray);
-	float3 CalculatePhong(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
-	float3 Reflect(float3& in, float3 normal);
-	float3 Refract(float3& in, float3& normal, float ior);
-	float Fresnel(float3& in, float3& normal, float ior);
+	float3 CalculatePhong(float3 origin, float3 normal, float3 m_color, CoreMaterial &material);
+	float3 Reflect(float3 in, float3 normal);
+	float3 Refract(float3 in, float3 normal, float ior);
+	float Fresnel(float3 in, float3 normal, float ior);
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
@@ -110,7 +110,7 @@ public:
 
 	Ray ray;
 
-	int maxDepth = 24;
+	int maxDepth = 48;
 };
 
 } // namespace lh2core

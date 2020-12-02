@@ -25,7 +25,7 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-2, -0.3, 6);
+	sphere.m_CenterPosition = make_float3(-2.1, 0.05, 6);
 	sphere.m_Radius = 1;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
@@ -34,7 +34,7 @@ void RenderCore::Init()
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, -0.3, 6);
+	mirrorSphere.m_CenterPosition = make_float3(0.0, 0.05, 6);
 	mirrorSphere.m_Radius = 1;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
@@ -43,7 +43,7 @@ void RenderCore::Init()
 	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(2, -0.3, 6);
+	glassSphere.m_CenterPosition = make_float3(2.1, 0.05, 6);
 	glassSphere.m_Radius = 1;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;

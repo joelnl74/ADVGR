@@ -62,7 +62,7 @@ public:
 
             if (dot(D, normal) < 0)
             {
-                D = make_float3(z2, y2, x2);
+                D = make_float3(-x2, -y2, -z2);
             }
 
             return D;

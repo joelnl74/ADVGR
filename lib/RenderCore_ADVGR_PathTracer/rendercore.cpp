@@ -25,7 +25,7 @@ using namespace lh2core;
 void RenderCore::Init()
 {
 	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-2, 0, 6);
+	sphere.m_CenterPosition = make_float3(-2.1, 0.05, 6);
 	sphere.m_Radius = 1;
 	sphere.m_Material.color.value.x = 1;
 	sphere.m_Material.color.value.y = 0;
@@ -35,31 +35,31 @@ void RenderCore::Init()
 	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, 0, 6);
+	mirrorSphere.m_CenterPosition = make_float3(0.0, 0.05, 6);
 	mirrorSphere.m_Radius = 1;
 	mirrorSphere.m_Material.color.value.x = 0.95;
 	mirrorSphere.m_Material.color.value.y = 0.95;
 	mirrorSphere.m_Material.color.value.z = 0.95;
 	mirrorSphere.m_Material.color.textureID = -1;
 	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
+	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(2, 0, 6);
+	glassSphere.m_CenterPosition = make_float3(2.1, 0.05, 6);
 	glassSphere.m_Radius = 1;
 	glassSphere.m_Material.color.value.x = 0;
 	glassSphere.m_Material.color.value.y = 0.0;
 	glassSphere.m_Material.color.value.z = 1;
 	glassSphere.m_Material.specular.value = 1;
 	glassSphere.m_Material.color.textureID = -1;
-	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
+	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
 
 	m_spheres.push_back(sphere);
 	m_spheres.push_back(mirrorSphere);
 	m_spheres.push_back(glassSphere);
 
 	CoreLightTri coreTriLight{};
-	coreTriLight.area = 5;
+	coreTriLight.area = 6;
 	coreTriLight.centre = make_float3(0, 8, 3);
 
 	m_coreTriLight.push_back(coreTriLight);
@@ -218,8 +218,6 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (t_min == numeric_limits<float>::max())
 	{
-		return BLACK;
-
 		float u = 1 + atan2f(ray.m_Direction.x, -ray.m_Direction.z) * INVPI;
 		float v = acosf(ray.m_Direction.y) * INVPI;
 
@@ -287,7 +285,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		/*if (firstTimeMatteHit == 0) 
+		if (firstTimeMatteHit == 0) 
 		{
 			mainColor = CalculatePhong(intersectionPoint, normalVector, color, material);
 			updatedColor = mainColor;
@@ -309,9 +307,7 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 
 		color = PI * 2.0f * BRDF * Ei;
 
-		return color;*/
-
-		return CalculatePhong(intersectionPoint, normalVector, color, material);
+		return color;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -360,81 +356,64 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	return color;
 }
 
-float3 RenderCore::CalculatePhong(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
+float3 RenderCore::CalculatePhong(float3 origin, float3 normal, float3 m_color, CoreMaterial& material)
 {
-	float3 directLighting = BLACK;
-	float3 lightDirection, lightIntensity;
-	for (CoreLightTri& light : m_coreTriLight) {
-		lightDirection = (origin - light.centre);
-		float3 r2 = normalize(lightDirection);
-		float distance = length(lightDirection);
-		lightDirection.x /= distance;
-		lightDirection.y /= distance;
-		lightDirection.z /= distance;
-		// 1 here is intensity
-		lightIntensity = WHITE * 1 / (4 * PI * r2);
+	float3 color = make_float3(0, 0, 0);
+	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
+
+	for (CoreLightTri& light : m_coreTriLight)
+	{
+		float3 direction = light.centre - origin;
+		float3 N = normalize(normal);
+		float3 L = normalize(light.centre - origin);
+
+		float lambertian = dot(N, L);
+
+		if (lambertian < 0)
+		{
+			lambertian = 0;
+		}
+
+		float specAngle = 0;
+		float specular = 0;
+
+		// Diffuse coeficient.
+		float kd = 1;
+		// Ambient reflection
+		float ka = 1.0f;
+		// Specular reflection.
+		float ks = 1.0f;
+		// Ambient influence.
+		float ambient = 0.1;
+
+		if (lambertian > 0)
+		{
+			float3 R = reflect(-L, N);      // Reflected light vector
+			float3 V = normalize(-origin); // Vector to viewer
+
+			// Compute the specular term
+			float specAngle = dot(R, V);
+
+			if (specAngle < 0)
+			{
+				specAngle = 0;
+			}
+
+			specular = pow(specAngle, 75);
+		}
+
+		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-	directLighting = lightIntensity * max(0.f, dot(normal, -lightDirection));
-	return (directLighting / PI) * m_color;
-
-	//float3 color = make_float3(0, 0, 0);
-	//int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
-
-	//for (CoreLightTri& light : m_coreTriLight)
-	//{
-	//	float3 direction = light.centre - origin;
-
-	//	float3 N = normalize(normal);
-	//	float3 L = normalize(light.centre - origin);
-
-	//	float lambertian = dot(N, L);
-
-	//	if (lambertian < 0)
-	//	{
-	//		lambertian = 0;
-	//	}
-
-	//	float specAngle = 0;
-	//	float specular = 0;
-
-	//	// Diffuse coeficient.
-	//	float kd = 1;
-	//	// Ambient reflection
-	//	float ka = 1.0f;
-	//	// Specular reflection.
-	//	float ks = 1.0f;
-	//	// Ambient influence.
-	//	float ambient = 0.1;
-
-	//	if (lambertian > 0)
-	//	{
-	//		float3 R = reflect(-L, N);      // Reflected light vector
-	//		float3 V = normalize(-origin); // Vector to viewer
-
-	//		// Compute the specular term
-	//		float specAngle = dot(R, V);
-
-	//		if (specAngle < 0)
-	//		{
-	//			specAngle = 0;
-	//		}
-
-	//		specular = pow(specAngle, 75);
-	//	}
-
-	//	color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
-	//}
-
-	//return color / 1;
+	return color / 1;
 }
 
-float3 RenderCore::Reflect(float3& in, float3 normal)
+float3 RenderCore::Reflect(float3 in, float3 normal)
 {
 	return normalize(in - 2 * dot(in, normal) * normal);
 }
 
-float3 RenderCore::Refract(float3& in, float3& normal, float ior)
+float3 RenderCore::Refract(float3 in, float3 normal, float ior)
 {
 	float3 n = normal;
 	float theta1 = dot(in, normal);
@@ -459,7 +438,7 @@ float3 RenderCore::Refract(float3& in, float3& normal, float ior)
 	return k < 0 ? make_float3(0, 0, 0) : eta * in + (eta * cosi - sqrtf(k)) * n;
 }
 
-float RenderCore::Fresnel(float3& in, float3& normal, float ior)
+float RenderCore::Fresnel(float3 in, float3 normal, float ior)
 {
 	float kr;
 	float cosi = clamp(-1.0, 1.0, dot(in, normal));
