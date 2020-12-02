@@ -42,7 +42,7 @@ void PrepareScene()
 
 	if (PathTracer)
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene_2.obj", 0.05f);
+		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene_room.obj", 0.05f);
 	}
 	else
 	{
