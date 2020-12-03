@@ -29,7 +29,7 @@ static CoreStats coreStats;
 #include "main_tools.h"
 #include "UI.h"
 
-bool PathTracer = true;
+bool PathTracer = false;
 
 //  +-----------------------------------------------------------------------------+
 //  |  PrepareScene                                                               |

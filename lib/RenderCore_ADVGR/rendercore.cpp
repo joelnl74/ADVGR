@@ -24,42 +24,6 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
-	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-2.1, 0.05, 6);
-	sphere.m_Radius = 1;
-	sphere.m_Material.color.value.x = 1;
-	sphere.m_Material.color.value.y = 0;
-	sphere.m_Material.color.value.z = 0;
-	sphere.m_Material.specular.value = 0.75;
-	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
-
-	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, 0.05, 6);
-	mirrorSphere.m_Radius = 1;
-	mirrorSphere.m_Material.color.value.x = 0.95;
-	mirrorSphere.m_Material.color.value.y = 0.95;
-	mirrorSphere.m_Material.color.value.z = 0.95;
-	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
-
-	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(2.1, 0.05, 6);
-	glassSphere.m_Radius = 1;
-	glassSphere.m_Material.color.value.x = 0;
-	glassSphere.m_Material.color.value.y = 0.0;
-	glassSphere.m_Material.color.value.z = 1;
-	glassSphere.m_Material.specular.value = 1;
-	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
-
-	m_spheres.push_back(sphere);
-	m_spheres.push_back(mirrorSphere);
-	m_spheres.push_back(glassSphere);
-
-	CoreLightTri coreLightTri{};
-	coreLightTri.area = 5;
-	coreLightTri.centre = make_float3(0, 1, 0);
-
-	m_coreTriLight.push_back(coreLightTri);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -112,12 +76,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	{
 		for (int x = 0; x < SCRWIDTH; x++)
 		{
-			for (int s = 0; s < samplingRate; s++)
-			{
 				// screen width
-				float3 sx = (x + dist(gen)) * dx * (view.p2 - view.p1);
+				float3 sx = (x  * dx * (view.p2 - view.p1));
 				// screen height
-				float3 sy = (y + dist(gen)) * dy * (view.p3 - view.p1);
+				float3 sy = (y  * dy * (view.p3 - view.p1));
 				// point on the screen
 				float3 point = view.p1 + sx + sy;
 				// direction
@@ -128,8 +90,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 				ray.m_Direction = direction;
 
 				screenData[x + y * SCRWIDTH] += Trace(ray, 0, x, y);
-			}
-			screenData[x + y * SCRWIDTH] /= float(samplingRate);
 		}
 	}
 
@@ -143,7 +103,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 		screenPixels[i] = (blue << 16) + (green << 8) + red;
 	}
-
 
 	// Copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
@@ -189,7 +148,7 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
-float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
+float3 RenderCore::Trace(Ray &ray, int depth, int x, int y)
 {
 	tuple intersect = Intersect(ray);
 
@@ -288,10 +247,11 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 			ray.m_Direction = normalize(m_refractionDirection);
 			m_refractionColor = Trace(ray, depth + 1);
 		}
-		
-		ray.m_Direction = newOrigin;
-		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
-		m_reflectionColor = Trace(ray, depth + 1);
+		Ray newRay;
+
+		newRay.m_Direction = newOrigin;
+		newRay.m_Direction = Reflect(ray.m_Direction, normalVector);
+		m_reflectionColor = Trace(newRay, depth + 1);
 		
 		m_finalColor += m_reflectionColor * kr + m_refractionColor * (1 - kr);
 
@@ -301,74 +261,38 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	return color;
 }
 
-float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
+float3 RenderCore::CalculateLightContribution(float3 &origin, float3 &normal, float3 &m_color, CoreMaterial &material)
 {
 	float3 color = make_float3(0, 0, 0);
-	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
+	int lightSourceCount = m_pointLights.size();
 
 	for (CorePointLight& light : m_pointLights)
 	{
-		float3 direction = light.position - origin;
-		float distanceToLight = length(direction);
+		float3 direction = normalize(light.position - origin);
 
 		Ray shadowRay;
 		shadowRay.m_Origin = origin;
-		shadowRay.m_Direction = normalize(direction);
+		shadowRay.m_Direction = direction;
 
-		tuple intersect = Intersect(shadowRay);
+		tuple intersection = Intersect(shadowRay);
 
-		float t_min = get<1>(intersect);
+		float t_min = get<1>(intersection);
 
 		if (t_min != numeric_limits<float>::max())
 		{
 			return m_color * 0.1;
 		}
 
-		float3 N = normalize(normal);
-		float3 L = normalize(light.position - origin);
+		float distToLight = length(light.position - origin);
 
-		float lambertian = dot(N, L);
-
-		if (lambertian < 0)
-		{
-			lambertian = 0;
-		}
-
-		float specAngle = 0;
-		float specular = 0;
-
-		// Diffuse coefficient.
-		float kd = 1.0f;
-		// Ambient reflection
-		float ka = 1.0f;
-		// Ambient reflection.
-		float ks = 1.0f;
-		// Ambient influence.
-		float ambient = 0.1;
-
-		if (lambertian > 0)
-		{
-			float3 R = reflect(-L, N);      // Reflected light vector
-			float3 V = normalize(-origin); // Vector to viewer
-
-			// Compute the specular term
-			float specAngle = dot(R, V);
-
-			if (specAngle < 0)
-			{
-				specAngle = 0;
-			}
-
-			specular = pow(specAngle, 90);
-		}
-
-		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
+		float3 scaledIntensity = light.radiance * (1.0f / (distToLight * distToLight));
+		color += m_color * scaledIntensity * dot(normal, direction); //Lambertian Shading
 	}
 
 	return color / 1;
 }
 
-float3 RenderCore::Reflect(float3& in, float3 normal)
+float3 RenderCore::Reflect(float3& in, float3 &normal)
 {
 	return normalize(in - 2 * dot(in, normal) * normal);
 }
@@ -398,7 +322,7 @@ float3 RenderCore::Refract(float3& in, float3& normal, float ior)
 	return k < 0 ? make_float3(0, 0, 0) : eta * in + (eta * cosi - sqrtf(k)) * n;
 }
 
-float RenderCore::Fresnel(float3& in, float3& normal, float ior)
+float RenderCore::Fresnel(float3 &in, float3 &normal, float ior)
 {
 	float kr;
 	float cosi = clamp(-1.0, 1.0, dot(in, normal));
@@ -467,6 +391,8 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount)
 {
+	m_pointLights.clear();
+
 	for (int i = 0; i < pointLightCount; i++)
 	{
 		CorePointLight pointLight{};
@@ -477,54 +403,6 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 		pointLight.radiance = pointLights[i].radiance;
 
 		m_pointLights.push_back(pointLight);
-	}
-
-	// not supported yet
-	for (int i = 0; i < spotLightCount; i++)
-	{
-		CoreSpotLight spotlight{};
-
-		spotlight.position = spotLights[i].position;
-		spotlight.dummy = spotLights[i].dummy;
-		spotlight.radiance = spotLights[i].radiance;
-		spotlight.cosOuter = spotLights[i].cosOuter;
-		spotlight.cosInner = spotLights[i].cosInner;
-		spotlight.direction = spotLights[i].direction;
-
-		m_spotLights.push_back(spotlight);
-	}
-
-	// not supported yet
-	for (int i = 0; i < directionalLightCount; i++)
-	{
-		CoreDirectionalLight directionalLight{};
-
-		directionalLight.dummy = directionalLights[i].dummy;
-		directionalLight.energy = directionalLights[i].energy;
-		directionalLight.radiance = directionalLights[i].radiance;
-		directionalLight.direction = directionalLights[i].direction;
-
-		m_directionalLight.push_back(directionalLight);
-	}
-
-	// not supported yet
-	for (int i = 0; i < triLightCount; i++)
-	{
-		CoreLightTri coreLight{};
-
-		coreLight.area = triLights[i].area;
-		coreLight.energy = triLights[i].energy;
-		coreLight.radiance = triLights[i].radiance;
-		coreLight.centre = triLights[i].centre;
-		coreLight.vertex0 = triLights[i].vertex0;
-		coreLight.vertex1 = triLights[i].vertex1;
-		coreLight.vertex2 = triLights[i].vertex2;
-		coreLight.N = triLights[i].N;
-		coreLight.dummy1 = triLights[i].dummy1;
-		coreLight.dummy2 = triLights[i].dummy2;
-		coreLight.triIdx = triLights[i].triIdx;
-
-		m_coreTriLight.push_back(coreLight);
 	}
 }
 

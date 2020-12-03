@@ -8,8 +8,8 @@ using namespace lighthouse2;
 class Ray
 {
 public:
-	Ray(float3 origin, float3 direction) : m_Direction(direction), m_Origin(origin) {};
-	Ray() {};
+	Ray(float3 origin, float3 direction) : m_Direction(direction), m_Origin(origin) { t = 0; };
+	Ray() { m_Origin = make_float3(0); m_Direction = make_float3(0); t = 0; };
 
 	float3 m_Origin;
 	float3 m_Direction;
