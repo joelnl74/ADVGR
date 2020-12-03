@@ -42,15 +42,19 @@ void PrepareScene()
 
 	if (PathTracer)
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.05f);
+		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene_2.obj", 0.1f);
 	}
 	else
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.05f);
+		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.1f);
 	}
 
 	renderer->AddInstance(sceneMesh);
 	renderer->AddPointLight(make_float3(0, 15, 8), 50 * make_float3(10, 10, 10));
+	
+	renderer->GetCamera()->TranslateRelative(make_float3(0, 5, -10));
+	renderer->GetCamera()->SetMatrix(renderer->GetCamera()->GetMatrix() * mat4::RotateX(0.25));
+	renderer->GetCamera()->Changed();
 
 	auto scene = renderer->GetScene();
 	auto sky = new HostSkyDome();
