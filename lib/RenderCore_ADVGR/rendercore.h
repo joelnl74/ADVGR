@@ -57,10 +57,10 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	float3 Trace(Ray &ray, int depth = 0, int x = 0, int y = 0);
+	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
 	tuple<CoreTri*, float, float3, CoreMaterial> Intersect(Ray ray);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
-	float3 Reflect(float3& in, float3 &normal);
+	float3 Reflect(float3& in, float3 normal);
 	float3 Refract(float3& in, float3& normal, float ior);
 	float Fresnel(float3& in, float3& normal, float ior);
 

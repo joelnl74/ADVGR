@@ -364,11 +364,45 @@ float3 RenderCore::CalculatePhong(float3 origin, float3 normal, float3 m_color, 
 	for (CoreLightTri& light : m_coreTriLight)
 	{
 		float3 direction = light.centre - origin;
+		float3 N = normalize(normal);
+		float3 L = normalize(light.centre - origin);
 
-		float distToLight = length(direction) - 2 * EPSILON;
+		float lambertian = dot(N, L);
 
-		float3 scaledIntensity = m_color * light.radiance * (1.0f / (distToLight * distToLight)) * dot(light.N, -normalize(direction));
-		color += m_color * scaledIntensity * dot(normal, normalize(direction)); //Lambertian Shading
+		if (lambertian < 0)
+		{
+			lambertian = 0;
+		}
+
+		float specAngle = 0;
+		float specular = 0;
+
+		// Diffuse coeficient.
+		float kd = 1;
+		// Ambient reflection
+		float ka = 1.0f;
+		// Specular reflection.
+		float ks = 1.0f;
+		// Ambient influence.
+		float ambient = 0.1;
+
+		if (lambertian > 0)
+		{
+			float3 R = reflect(-L, N);      // Reflected light vector
+			float3 V = normalize(-origin); // Vector to viewer
+
+			// Compute the specular term
+			float specAngle = dot(R, V);
+
+			if (specAngle < 0)
+			{
+				specAngle = 0;
+			}
+
+			specular = pow(specAngle, 75);
+		}
+
+		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
 	return color / 1;
