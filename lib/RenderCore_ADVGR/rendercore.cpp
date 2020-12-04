@@ -67,7 +67,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
 	// For anti aliasing
-	float samplingRate = 1;
+	float samplingRate = 2;
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> dist(0, 1);
@@ -91,8 +91,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 				ray.m_Origin = view.pos;
 				ray.m_Direction = direction;
 
-				screenData[x + y * SCRWIDTH] = Trace(ray, 0, x, y);
+				screenData[x + y * SCRWIDTH] += Trace(ray, 0, x, y);
 			}
+
+			screenData[x + y * SCRWIDTH] /= samplingRate + 1;
 		}
 	}
 
