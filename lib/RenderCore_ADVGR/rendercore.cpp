@@ -86,6 +86,7 @@ AABB RenderCore::CalculateBounds(Mesh mesh)
 	root = new BVHNode();
 
 	root->bounds = aabb;
+	root->primitives.push_back(mesh.triangles);
 
 	return aabb;
 }
