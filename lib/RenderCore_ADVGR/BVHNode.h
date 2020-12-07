@@ -9,7 +9,7 @@ class BVHNode
 {
 public:
 	~BVHNode();
-	void Intersect(Ray& ray);
+	CoreTri* Intersect(Ray& ray);
 	void SetupRoot(Mesh& mesh);
 	void CalculateBounds(CoreTri* coreTri, int vCount);
 	void SubDivide();

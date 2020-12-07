@@ -125,19 +125,24 @@ tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	CoreMaterial coreMaterial;
 	float3 normal = make_float3(0);
 
-	for (Mesh& mesh : meshes) {
-		for (int i = 0; i < mesh.vcount / 3; i++) {
+	CoreTri* node = root->Intersect(ray);
+
+	if (node == nullptr)
+	{
+		return make_tuple(tri, t_min, normal, coreMaterial);
+	}
+
+	for (int i = 0; i <  meshes[0].vcount / 3; i++) 
+	{
+		// Check if we are able to intersect a triangle. If not, max float is returned
+		float t = Utils::IntersectTriangle(ray, node[i].vertex0, node[i].vertex1, node[i].vertex2);
 			
-			// Check if we are able to intersect a triangle. If not, max float is returned
-			float t = Utils::IntersectTriangle(ray, mesh.triangles[i].vertex0, mesh.triangles[i].vertex1, mesh.triangles[i].vertex2);
-			
-			if (t < t_min)
-			{
-				t_min = t;
-				tri = &mesh.triangles[i];
-				coreMaterial = materials[tri->material];
-				normal = make_float3(tri->Nx, tri->Ny, tri->Nz);
-			}
+		if (t < t_min)
+		{
+			t_min = t;
+			tri = &node[i];
+			coreMaterial = materials[tri->material];
+			normal = make_float3(node[i].Nx, node[i].Ny, node[i].Nz);
 		}
 	}
 
