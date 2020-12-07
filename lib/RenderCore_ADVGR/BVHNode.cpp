@@ -38,6 +38,7 @@ void BVHNode::CalculateBounds(CoreTri* coreTri, vector<CoreTri> children, int vC
 {
 	float3 minBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
+
 	if (children.empty())
 	{
 		for (int i = 0; i < vCount / 3; i++)
@@ -80,7 +81,9 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 void BVHNode::SubDivide()
 {
 	if (this->m_Root != NULL)
+	{
 		CalculateBounds({}, primitives, primitives.size());
+	}
 
 	// TODO: Change 10 into a variable
 	// Termination criterion
@@ -104,9 +107,11 @@ void BVHNode::Partition()
 	// Make a middle split along the axis with the longest side
 	float3 splitplane = (bounds.minBounds + bounds.maxBounds) / 2;
 	int longestX = bounds.maxBounds.x - bounds.minBounds.x;
-	int longestY = bounds.maxBounds.x - bounds.minBounds.x;
-	int longestZ = bounds.maxBounds.x - bounds.minBounds.x;
+	int longestY = bounds.maxBounds.y - bounds.minBounds.y;
+	int longestZ = bounds.maxBounds.z - bounds.minBounds.z;
+
 	int splitAxis = max(max(longestX, longestY), longestZ);
+	
 	Axis axis;
 	if (splitAxis == longestX)
 		axis = Axis::X;
@@ -119,7 +124,9 @@ void BVHNode::Partition()
 	{
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 		CoreTri triangle = primitive;
-		switch (axis) {
+
+		switch (axis) 
+		{
 		case Axis::X:
 			if (centroid.x < splitplane.x)
 				m_Left->primitives.push_back(triangle);
@@ -142,5 +149,4 @@ void BVHNode::Partition()
 			return;
 		}
 	}
-
 }
