@@ -55,6 +55,35 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	newMesh.triangles = new CoreTri[vertexCount / 3];
 	memcpy(newMesh.triangles, triangleData, (vertexCount / 3) * sizeof(CoreTri));
 	meshes.push_back(newMesh);
+
+	CalculateBounds(newMesh);
+}
+
+
+AABB RenderCore::CalculateBounds(Mesh mesh)
+{
+	AABB aabb{};
+
+	for (Mesh& mesh : meshes) {
+		aabb.minBounds = mesh.triangles[0].vertex0;
+		aabb.maxBounds = mesh.triangles[0].vertex0;
+
+		for (int i = 0; i < mesh.vcount / 3; i++) 
+		{
+			float3 vertex0 = mesh.triangles[i].vertex0;
+			float3 vertex1 = mesh.triangles[i].vertex1;
+			float3 vertex2 = mesh.triangles[i].vertex2;
+
+			float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
+			float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
+
+			aabb.minBounds = fminf(aabb.minBounds, primMin);
+			aabb.maxBounds = fmaxf(aabb.maxBounds, primMax);
+
+		}
+	}
+
+	return aabb;
 }
 
 //  +-----------------------------------------------------------------------------+

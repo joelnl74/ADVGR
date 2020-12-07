@@ -16,7 +16,7 @@
 #pragma once
 #include "Ray.h"
 #include "Sphere.h"
-#include "rendersystem.h"
+#include "BVHNode.h"
 
 namespace lh2core
 {
@@ -63,6 +63,7 @@ public:
 	float3 Reflect(float3& in, float3 normal);
 	float3 Refract(float3& in, float3& normal, float ior);
 	float Fresnel(float3& in, float3& normal, float ior);
+	AABB CalculateBounds(Mesh mesh);
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}

@@ -1,6 +1,4 @@
 #pragma once
-#include "platform.h"
-
 using namespace lighthouse2;
 
 #include "core_api_base.h"
