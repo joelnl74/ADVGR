@@ -83,6 +83,10 @@ AABB RenderCore::CalculateBounds(Mesh mesh)
 		}
 	}
 
+	root = new BVHNode();
+
+	root->bounds = aabb;
+
 	return aabb;
 }
 

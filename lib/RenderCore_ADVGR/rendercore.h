@@ -104,6 +104,7 @@ public:
 	vector<Sphere> m_spheres;
 
 	Ray ray;
+	BVHNode* root;
 
 	int maxDepth = 3;
 };
