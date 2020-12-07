@@ -30,7 +30,7 @@ void BVHNode::SetupRoot(Mesh& mesh)
 	}
 
 	CalculateBounds();
-	SubDivide();
+	SubDivide(1);
 }
 
 void BVHNode::CalculateBounds()
@@ -62,11 +62,12 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 	return vertex0 + vertex1 + vertex2 / 3.0f;
 }
 
-void BVHNode::SubDivide()
+void BVHNode::SubDivide(int depth)
 {
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (primitives.size() < 10) {
+	if (depth > 4) 
+	{
 		m_IsLeaf = true;
 		return;
 	}
@@ -82,8 +83,8 @@ void BVHNode::SubDivide()
 	m_Left->CalculateBounds();
 	m_Right->CalculateBounds();
 
-	m_Left->SubDivide();
-	m_Right->SubDivide();
+	m_Left->SubDivide(depth + 1);
+	m_Right->SubDivide(depth + 1);
 }
 
 // Split the primitives over left and right child
@@ -108,13 +109,12 @@ void BVHNode::Partition()
 	for (auto& primitive : primitives) 
 	{
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-		CoreTri triangle = primitive;
 
 		switch (axis) 
 		{
 		case Axis::X:
 			if (centroid.x < splitplane.x)
-				m_Left->primitives.push_back(triangle);
+				m_Left->primitives.push_back(primitive);
 			else
 				m_Right->primitives.push_back(primitive);
 			break;
@@ -134,4 +134,6 @@ void BVHNode::Partition()
 			return;
 		}
 	}
+
+	primitives.clear();
 }
