@@ -24,42 +24,6 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
-	Sphere sphere;
-	sphere.m_CenterPosition = make_float3(-2.1, 0.05, 6);
-	sphere.m_Radius = 1;
-	sphere.m_Material.color.value.x = 1;
-	sphere.m_Material.color.value.y = 0;
-	sphere.m_Material.color.value.z = 0;
-	sphere.m_Material.specular.value = 0.75;
-	sphere.m_Material.pbrtMaterialType = MaterialType::PBRT_GLASS;
-
-	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(0.0, 0.05, 6);
-	mirrorSphere.m_Radius = 1;
-	mirrorSphere.m_Material.color.value.x = 0.95;
-	mirrorSphere.m_Material.color.value.y = 0.95;
-	mirrorSphere.m_Material.color.value.z = 0.95;
-	mirrorSphere.m_Material.specular.value = 1;
-	mirrorSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MIRROR;
-
-	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(2.1, 0.05, 6);
-	glassSphere.m_Radius = 1;
-	glassSphere.m_Material.color.value.x = 0;
-	glassSphere.m_Material.color.value.y = 0.0;
-	glassSphere.m_Material.color.value.z = 1;
-	glassSphere.m_Material.specular.value = 1;
-	glassSphere.m_Material.pbrtMaterialType = MaterialType::PBRT_MATTE;
-
-	m_spheres.push_back(sphere);
-	m_spheres.push_back(mirrorSphere);
-	m_spheres.push_back(glassSphere);
-
-	CoreLightTri coreLightTri{};
-	coreLightTri.area = 5;
-	coreLightTri.centre = make_float3(0, 1, 0);
-
-	m_coreTriLight.push_back(coreLightTri);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -103,7 +67,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
 	// For anti aliasing
-	float samplingRate = 50;
+	float samplingRate = 2;
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> dist(0, 1);
@@ -129,7 +93,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 				screenData[x + y * SCRWIDTH] += Trace(ray, 0, x, y);
 			}
-			screenData[x + y * SCRWIDTH] /= float(samplingRate);
+
+			screenData[x + y * SCRWIDTH] /= samplingRate + 1;
 		}
 	}
 
@@ -348,8 +313,8 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 
 		if (lambertian > 0)
 		{
-			float3 R = reflect(-L, N);      // Reflected light vector
-			float3 V = normalize(-origin); // Vector to viewer
+			float3 R = -reflect(L, N);      // Reflected light vector
+			float3 V = normalize(make_float3(0, 5, -10)); // Vector to viewer
 
 			// Compute the specular term
 			float specAngle = dot(R, V);
@@ -359,13 +324,13 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 				specAngle = 0;
 			}
 
-			specular = pow(specAngle, 90);
+			specular = pow(specAngle, 75);
 		}
 
 		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-	return color / 1;
+	return color / 1.0f;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
