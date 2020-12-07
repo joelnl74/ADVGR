@@ -11,9 +11,10 @@ public:
 	~BVHNode();
 	std::vector<CoreTri> Intersect(Ray& ray);
 	void SetupRoot(Mesh& mesh);
-	void CalculateBounds(CoreTri* coreTri, int vCount);
+	void CalculateBounds(CoreTri* coreTri, vector<CoreTri> children, int vCount);
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
 	void SubDivide();
+	void Partition();
 
 public:
 	BVHNode* m_Root;
@@ -22,4 +23,11 @@ public:
 	bool m_IsLeaf;
 	AABB bounds;
 	vector<CoreTri> primitives;
+
+enum class Axis
+{
+	X,
+	Y,
+	Z
+};
 };
