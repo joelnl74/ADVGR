@@ -11,6 +11,7 @@ public:
 	void Intersect(Ray& ray);
 	void SetupRoot(Mesh& mesh);
 	void CalculateBounds(CoreTri* coreTri, int vCount);
+	void SubDivide();
 
 public:
 	BVHNode* m_Root;
@@ -18,5 +19,5 @@ public:
 	BVHNode* m_Left;
 	bool m_IsLeaf;
 	AABB bounds;
-	std::vector<CoreTri*> primitives;
+	CoreTri* primitives;
 };

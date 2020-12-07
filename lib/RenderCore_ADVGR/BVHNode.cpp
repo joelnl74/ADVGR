@@ -6,7 +6,10 @@ void BVHNode::Intersect(Ray& ray)
 
 void BVHNode::SetupRoot(Mesh& mesh)
 {
+	primitives = mesh.triangles;
+
 	CalculateBounds(mesh.triangles, mesh.vcount);
+	SubDivide();
 }
 
 void BVHNode::CalculateBounds(CoreTri* coreTri, int vCount)
@@ -29,4 +32,13 @@ void BVHNode::CalculateBounds(CoreTri* coreTri, int vCount)
 
 	bounds.minBounds = minBounds;
 	bounds.maxBounds = maxBounds;
+}
+
+void BVHNode::SubDivide()
+{
+	m_Left = new BVHNode();
+	m_Right = new BVHNode();
+
+	m_Left->m_Root = this;
+	m_Right->m_Root = this;
 }
