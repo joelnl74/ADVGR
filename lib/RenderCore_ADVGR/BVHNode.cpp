@@ -92,11 +92,11 @@ void BVHNode::Partition()
 {
 	// Make a middle split along the axis with the longest side
 	float3 splitplane = (bounds.minBounds + bounds.maxBounds) / 2;
-	int longestX = bounds.maxBounds.x - bounds.minBounds.x;
-	int longestY = bounds.maxBounds.y - bounds.minBounds.y;
-	int longestZ = bounds.maxBounds.z - bounds.minBounds.z;
+	float longestX = bounds.maxBounds.x - bounds.minBounds.x;
+	float longestY = bounds.maxBounds.y - bounds.minBounds.y;
+	float longestZ = bounds.maxBounds.z - bounds.minBounds.z;
 
-	int splitAxis = max(max(longestX, longestY), longestZ);
+	float splitAxis = max(max(longestX, longestY), longestZ);
 	
 	Axis axis;
 	if (splitAxis == longestX)
