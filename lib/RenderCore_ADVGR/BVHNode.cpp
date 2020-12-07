@@ -6,7 +6,7 @@ BVHNode::~BVHNode()
 	delete m_Right;
 }
 
-CoreTri* BVHNode::Intersect(Ray& ray)
+std::vector<CoreTri> BVHNode::Intersect(Ray& ray)
 {
 	float3 invD = 1.0f / ray.m_Direction;
 	float3 t0 = (bounds.minBounds - ray.m_Origin) * invD;
@@ -19,14 +19,18 @@ CoreTri* BVHNode::Intersect(Ray& ray)
 	}
 
 	// False.
-	return nullptr;
+	return {};
 }
 
 void BVHNode::SetupRoot(Mesh& mesh)
 {
-	primitives = mesh.triangles;
-
 	CalculateBounds(mesh.triangles, mesh.vcount);
+
+	for (int i = 0; i < mesh.vcount / 3; i++)
+	{
+		primitives.push_back(mesh.triangles[i]);
+	}
+
 	SubDivide();
 }
 

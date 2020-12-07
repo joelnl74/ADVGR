@@ -118,31 +118,32 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 }
 
-tuple<CoreTri*, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
+tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 {
 	float t_min = numeric_limits<float>::max();
-	CoreTri* tri;
+	CoreTri tri;
 	CoreMaterial coreMaterial;
 	float3 normal = make_float3(0);
 
-	CoreTri* node = root->Intersect(ray);
+	vector<CoreTri> primitives = root->Intersect(ray);
+	int size = primitives.size();
 
-	if (node == nullptr)
+	if (size == 0)
 	{
 		return make_tuple(tri, t_min, normal, coreMaterial);
 	}
 
-	for (int i = 0; i <  meshes[0].vcount / 3; i++) 
+	for (int i = 0; i < size; i++)
 	{
 		// Check if we are able to intersect a triangle. If not, max float is returned
-		float t = Utils::IntersectTriangle(ray, node[i].vertex0, node[i].vertex1, node[i].vertex2);
+		float t = Utils::IntersectTriangle(ray, primitives[i].vertex0, primitives[i].vertex1, primitives[i].vertex2);
 			
 		if (t < t_min)
 		{
 			t_min = t;
-			tri = &node[i];
-			coreMaterial = materials[tri->material];
-			normal = make_float3(node[i].Nx, node[i].Ny, node[i].Nz);
+			tri = primitives[i];
+			coreMaterial = materials[tri.material];
+			normal = make_float3(primitives[i].Nx, primitives[i].Ny, primitives[i].Nz);
 		}
 	}
 
@@ -189,13 +190,13 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 	// If the material contains a texture, set texture
 	if (material.color.textureID > -1)
 	{
-		CoreTri* triangle = get<0>(intersect);
+		CoreTri triangle = get<0>(intersect);
 
 		auto& texture = textures[material.color.textureID];
 
-		float3 p0 = intersectionPoint - triangle->vertex0;
-		float3 p1 = intersectionPoint - triangle->vertex1;
-		float3 p2 = intersectionPoint - triangle->vertex2;
+		float3 p0 = intersectionPoint - triangle.vertex0;
+		float3 p1 = intersectionPoint - triangle.vertex1;
+		float3 p2 = intersectionPoint - triangle.vertex2;
 
 		// Main triangle area a
 		float a = length(cross(p0 - p1, p0 - p2));
@@ -206,8 +207,8 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 		// p2's triangle area / a 
 		float w = length(cross(p0, p1)) / a; 
 
-		float uu = triangle->u0 * u + triangle->u1 * v + triangle->u2 * w;
-		float vv = triangle->v0 * u + triangle->v1 * v + triangle->v2 * w;
+		float uu = triangle.u0 * u + triangle.u1 * v + triangle.u2 * w;
+		float vv = triangle.v0 * u + triangle.v1 * v + triangle.v2 * w;
 
 		int xPixel = float(texture.width) * uu;
 		int yPixel = float(texture.height) * vv;
