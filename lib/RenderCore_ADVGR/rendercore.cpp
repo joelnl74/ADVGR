@@ -144,7 +144,7 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 			tri = primitives[i];
 			coreMaterial = materials[tri.material];
 			normal = make_float3(primitives[i].Nx, primitives[i].Ny, primitives[i].Nz);
-		}
+		} 
 	}
 
 	for (auto& sphere : m_spheres)

@@ -24,49 +24,33 @@ std::vector<CoreTri> BVHNode::Intersect(Ray& ray)
 
 void BVHNode::SetupRoot(Mesh& mesh)
 {
-	CalculateBounds(mesh.triangles, {}, mesh.vcount);
-
 	for (int i = 0; i < mesh.vcount / 3; i++)
 	{
 		primitives.push_back(mesh.triangles[i]);
 	}
 
+	CalculateBounds();
 	SubDivide();
 }
 
-void BVHNode::CalculateBounds(CoreTri* coreTri, vector<CoreTri> children, int vCount)
+void BVHNode::CalculateBounds()
 {
 	float3 minBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
 
-	if (children.empty())
+	int size = primitives.size();
+
+	for (int i = 0; i < size; i++)
 	{
-		for (int i = 0; i < vCount / 3; i++)
-		{
-			float3 vertex0 = coreTri[i].vertex0;
-			float3 vertex1 = coreTri[i].vertex1;
-			float3 vertex2 = coreTri[i].vertex2;
+		float3 vertex0 = primitives[i].vertex0;
+		float3 vertex1 = primitives[i].vertex1;
+		float3 vertex2 = primitives[i].vertex2;
 
-			float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
-			float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
+		float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
+		float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
 
-			minBounds = fminf(minBounds, primMin);
-			maxBounds = fmaxf(maxBounds, primMax);
-		}
-	}
-	else {
-		for (int i = 0; i < vCount; i++)
-		{
-			float3 vertex0 = children[i].vertex0;
-			float3 vertex1 = children[i].vertex1;
-			float3 vertex2 = children[i].vertex2;
-
-			float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
-			float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
-
-			minBounds = fminf(minBounds, primMin);
-			maxBounds = fmaxf(maxBounds, primMax);
-		}
+		minBounds = fminf(minBounds, primMin);
+		maxBounds = fmaxf(maxBounds, primMax);
 	}
 
 	bounds.minBounds = minBounds;
@@ -80,11 +64,6 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 
 void BVHNode::SubDivide()
 {
-	if (this->m_Root != NULL)
-	{
-		CalculateBounds({}, primitives, primitives.size());
-	}
-
 	// TODO: Change 10 into a variable
 	// Termination criterion
 	if (primitives.size() < 10) {
@@ -94,9 +73,15 @@ void BVHNode::SubDivide()
 	
 	m_Left = new BVHNode();
 	m_Right = new BVHNode();
+
 	Partition();
+	
 	m_Left->m_Root = this;
 	m_Right->m_Root = this;
+	
+	m_Left->CalculateBounds();
+	m_Right->CalculateBounds();
+
 	m_Left->SubDivide();
 	m_Right->SubDivide();
 }
