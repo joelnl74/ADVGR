@@ -8,18 +8,25 @@ BVHNode::~BVHNode()
 
 std::vector<CoreTri> BVHNode::Intersect(Ray& ray)
 {
-	float3 invD = 1.0f / ray.m_Direction;
-	float3 t0 = (bounds.minBounds - ray.m_Origin) * invD;
-	float3 t1 = (bounds.maxBounds - ray.m_Origin) * invD;
-
-	if (invD.x < 0.0f || invD.y < 0.0f || invD.z < 0.0f) 
+	if (m_IsLeaf)
 	{
-		// True.
-		return primitives;
+		float3 invD = 1.0f / ray.m_Direction;
+		float3 t0 = (bounds.minBounds - ray.m_Origin) * invD;
+		float3 t1 = (bounds.maxBounds - ray.m_Origin) * invD;
+
+		if (invD.x < 0.0f || invD.y < 0.0f || invD.z < 0.0f)
+		{
+			// True.
+			return primitives;
+		}
+
+		// False.
+		return {};
 	}
 
-	// False.
-	return {};
+	// TODO some logic that decides if we should take the left or right node.
+	m_Right->Intersect(ray);
+	m_Left->Intersect(ray);
 }
 
 void BVHNode::SetupRoot(Mesh& mesh)
