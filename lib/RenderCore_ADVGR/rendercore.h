@@ -17,21 +17,11 @@
 #include "Ray.h"
 #include "Sphere.h"
 #include "BVHNode.h"
+#include "Mesh.h"
 
 namespace lh2core
 {
 
-//  +-----------------------------------------------------------------------------+
-//  |  Mesh                                                                       |
-//  |  Minimalistic mesh storage.                                           LH2'19|
-//  +-----------------------------------------------------------------------------+
-class Mesh
-{
-public:
-	float4* vertices = 0;							// vertex data received via SetGeometry
-	int vcount = 0;									// vertex count
-	CoreTri* triangles = 0;							// 'fat' triangle data
-};
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore                                                                 |
@@ -63,7 +53,6 @@ public:
 	float3 Reflect(float3& in, float3 normal);
 	float3 Refract(float3& in, float3& normal, float ior);
 	float Fresnel(float3& in, float3& normal, float ior);
-	AABB CalculateBounds(Mesh mesh);
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}

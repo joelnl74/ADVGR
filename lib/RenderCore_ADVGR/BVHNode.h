@@ -2,13 +2,15 @@
 #include "rendersystem.h""
 #include "AABB.h"
 #include "Ray.h"
-
+#include "Mesh.h"
 using namespace lighthouse2;
 
 class BVHNode
 {
 public:
 	void Intersect(Ray& ray);
+	void SetupRoot(Mesh& mesh);
+	void CalculateBounds(CoreTri* coreTri, int vCount);
 
 public:
 	BVHNode* m_Root;
