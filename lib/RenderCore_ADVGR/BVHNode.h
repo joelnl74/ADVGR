@@ -9,10 +9,10 @@ class BVHNode
 public:
 	void Intersect(Ray& ray);
 
-private:
+public:
 	BVHNode* m_Right;
 	BVHNode* m_Left;
-	bool m_LeafNode;
+	bool m_IsLeaf;
 	AABB bounds;
 	std::vector<CoreTri*> primitives;
 };
