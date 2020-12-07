@@ -8,6 +8,7 @@ using namespace lighthouse2;
 class BVHNode
 {
 public:
+	~BVHNode();
 	void Intersect(Ray& ray);
 	void SetupRoot(Mesh& mesh);
 	void CalculateBounds(CoreTri* coreTri, int vCount);

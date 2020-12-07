@@ -1,7 +1,25 @@
 #include "BVHNode.h"
 
-void BVHNode::Intersect(Ray& ray)
+BVHNode::~BVHNode()
 {
+	delete m_Left;
+	delete m_Right;
+}
+
+CoreTri* BVHNode::Intersect(Ray& ray)
+{
+	float3 invD = 1.0f / ray.m_Direction;
+	float3 t0 = (bounds.minBounds - ray.m_Origin) * invD;
+	float3 t1 = (bounds.minBounds - ray.m_Direction) * invD;
+
+	if (invD.x < 0.0f || invD.y < 0.0f || invD.z < 0.0f) 
+	{
+		// True.
+		return primitives;
+	}
+
+	// False.
+	return nullptr;
 }
 
 void BVHNode::SetupRoot(Mesh& mesh)
