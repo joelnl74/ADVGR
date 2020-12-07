@@ -2,8 +2,6 @@
 
 BVHNode::~BVHNode()
 {
-	delete m_Left;
-	delete m_Right;
 }
 
 std::vector<CoreTri> BVHNode::Intersect(Ray& ray)
@@ -24,7 +22,6 @@ std::vector<CoreTri> BVHNode::Intersect(Ray& ray)
 		return {};
 	}
 
-	// TODO some logic that decides if we should take the left or right node.
 	m_Right->Intersect(ray);
 	m_Left->Intersect(ray);
 }
@@ -70,15 +67,17 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 }
 
 void BVHNode::SubDivide(int depth)
-{
+{	
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (depth > 4) 
+	if (depth > 1)
 	{
-		m_IsLeaf = true;
+		m_Root->m_Left->m_IsLeaf = true;
+		m_Root->m_Right->m_IsLeaf = true;
+
 		return;
 	}
-	
+
 	m_Left = new BVHNode();
 	m_Right = new BVHNode();
 
