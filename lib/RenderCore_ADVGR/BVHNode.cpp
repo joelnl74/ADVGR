@@ -69,7 +69,7 @@ void BVHNode::SubDivide(int depth)
 {	
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (depth > 1)
+	if (depth > 5)
 	{
 		m_Root->m_Left->m_IsLeaf = true;
 		m_Root->m_Right->m_IsLeaf = true;
