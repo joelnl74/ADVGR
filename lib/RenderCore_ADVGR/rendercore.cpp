@@ -92,11 +92,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 				// direction
 				float3 direction = normalize(point - view.pos);
 
-				ray.t = INT_MAX;
 				ray.m_Origin = view.pos;
 				ray.m_Direction = direction;
 
-				screenData[x + y * SCRWIDTH] += Trace(ray, 0, x, y);
+				screenData[x + y * SCRWIDTH] += Trace(ray, 0);
 			}
 
 			screenData[x + y * SCRWIDTH] /= samplingRate + 1;
@@ -119,7 +118,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
 
-	cout << renderTimer.elapsed() << endl;
 	coreStats.renderTime = renderTimer.elapsed();
 }
 
@@ -173,7 +171,7 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
-float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
+float3 RenderCore::Trace(Ray ray, int depth)
 {
 	tuple intersect = Intersect(ray);
 
@@ -288,18 +286,14 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
 {
 	float3 color = make_float3(0, 0, 0);
-	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
+	int lightSourceCount = m_pointLights.size();
 
 	for (CorePointLight& light : m_pointLights)
 	{
-		float3 direction = light.position - origin;
-		float distanceToLight = length(direction);
+		ray.m_Origin = origin;
+		ray.m_Direction = normalize(light.position - origin);
 
-		Ray shadowRay;
-		shadowRay.m_Origin = origin;
-		shadowRay.m_Direction = normalize(direction);
-
-		tuple intersect = Intersect(shadowRay);
+		tuple intersect = Intersect(ray);
 
 		float t_min = get<1>(intersect);
 
@@ -349,7 +343,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-	return color / 1.0f;
+	return color / lightSourceCount;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
