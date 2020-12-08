@@ -66,6 +66,8 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
+	renderTimer.reset();
+
 	float dx = 1.0f / (SCRWIDTH - 1);
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
@@ -116,6 +118,9 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	// Copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
+
+	cout << renderTimer.elapsed() << endl;
+	coreStats.renderTime = renderTimer.elapsed();
 }
 
 tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
