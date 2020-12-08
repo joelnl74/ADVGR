@@ -125,27 +125,31 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	CoreMaterial coreMaterial;
 	float3 normal = make_float3(0);
 
-	vector<CoreTri> primitives = {};
-	root->Intersect(ray, primitives);
-	int size = primitives.size();
+	vector<BVHNode> nodes = {};
+	root->Intersect(ray, nodes);
 
-	if (size == 0)
+	if (nodes.size() == 0)
 	{
 		return make_tuple(tri, t_min, normal, coreMaterial);
 	}
 
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < nodes.size(); i++)
 	{
-		// Check if we are able to intersect a triangle. If not, max float is returned
-		float t = Utils::IntersectTriangle(ray, primitives[i].vertex0, primitives[i].vertex1, primitives[i].vertex2);
-			
-		if (t < t_min)
+		vector<CoreTri> primitives = nodes[i].primitives;
+
+		for (int j = 0; j < primitives.size(); j++)
 		{
-			t_min = t;
-			tri = primitives[i];
-			coreMaterial = materials[tri.material];
-			normal = make_float3(primitives[i].Nx, primitives[i].Ny, primitives[i].Nz);
-		} 
+			// Check if we are able to intersect a triangle. If not, max float is returned
+			float t = Utils::IntersectTriangle(ray, primitives[j].vertex0, primitives[j].vertex1, primitives[j].vertex2);
+
+			if (t < t_min)
+			{
+				t_min = t;
+				tri = primitives[j];
+				coreMaterial = materials[tri.material];
+				normal = make_float3(primitives[j].Nx, primitives[j].Ny, primitives[j].Nz);
+			}
+		}
 	}
 
 	for (auto& sphere : m_spheres)
