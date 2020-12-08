@@ -146,7 +146,6 @@ int main()
 		shader->SetInputMatrix( "view", mat4::Identity() );
 		DrawQuad();
 		shader->Unbind();
-		renderer->WaitForRender();
 		UpdateUI();
 		// finalize
 		glfwSwapBuffers( window );
