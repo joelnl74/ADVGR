@@ -96,20 +96,29 @@ void BVHNode::SubDivide(int depth)
 void BVHNode::Partition()
 {
 	// Make a middle split along the axis with the longest side
-	float3 splitplane = (bounds.minBounds + bounds.maxBounds) / 2;
 	float longestX = abs(bounds.maxBounds.x - bounds.minBounds.x);
 	float longestY = abs(bounds.maxBounds.y - bounds.minBounds.y);
 	float longestZ = abs(bounds.maxBounds.z - bounds.minBounds.z);
 
 	float splitAxis = max(max(longestX, longestY), longestZ);
-	
+
 	Axis axis;
+	float splitplane;
 	if (splitAxis == longestX)
+	{
+		splitplane = longestX / 2;
 		axis = Axis::X;
+	}
 	else if (splitAxis == longestY)
+	{
+		splitplane = longestY / 2;
 		axis = Axis::Y;
+	}
 	else
+	{
+		splitplane = longestZ / 2;
 		axis = Axis::Z;
+	}
 
 	for (auto& primitive : primitives) 
 	{
@@ -118,19 +127,19 @@ void BVHNode::Partition()
 		switch (axis) 
 		{
 		case Axis::X:
-			if (centroid.x < splitplane.x)
+			if (centroid.x < splitplane)
 				m_Left->primitives.push_back(primitive);
 			else
 				m_Right->primitives.push_back(primitive);
 			break;
 		case Axis::Y:
-			if (centroid.y < splitplane.y)
+			if (centroid.y < splitplane)
 				m_Left->primitives.push_back(primitive);
 			else
 				m_Right->primitives.push_back(primitive);
 			break;
 		case Axis::Z:
-			if (centroid.z < splitplane.z)
+			if (centroid.z < splitplane)
 				m_Left->primitives.push_back(primitive);
 			else
 				m_Right->primitives.push_back(primitive);
