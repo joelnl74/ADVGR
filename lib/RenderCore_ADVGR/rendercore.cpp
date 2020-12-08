@@ -125,7 +125,8 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	CoreMaterial coreMaterial;
 	float3 normal = make_float3(0);
 
-	vector<CoreTri> primitives = root->Intersect(ray);
+	vector<CoreTri> primitives = {};
+	root->Intersect(ray, primitives);
 	int size = primitives.size();
 
 	if (size == 0)

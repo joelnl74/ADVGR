@@ -4,7 +4,7 @@ BVHNode::~BVHNode()
 {
 }
 
-std::vector<CoreTri> BVHNode::Intersect(Ray& ray)
+void BVHNode::Intersect(Ray& ray, vector<CoreTri>& hitPrim)
 {
 	float3 invD = 1.0f / ray.m_Direction;
 	float3 t0 = (bounds.minBounds - ray.m_Origin) * invD;
@@ -12,12 +12,19 @@ std::vector<CoreTri> BVHNode::Intersect(Ray& ray)
 
 	if (invD.x < 0.0f || invD.y < 0.0f || invD.z < 0.0f)
 	{
-		// True.
-		return primitives;
+		if (m_IsLeaf)
+		{
+			// True.
+			for (auto& primitive : primitives) {
+				hitPrim.push_back(primitive);
+			}
+		}
+		else
+		{
+			m_Left->Intersect(ray, hitPrim);
+			m_Right->Intersect(ray, hitPrim);
+		}
 	}
-
-	// False.
-	return {};
 }
 
 void BVHNode::SetupRoot(Mesh& mesh)
