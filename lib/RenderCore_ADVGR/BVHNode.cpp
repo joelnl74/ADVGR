@@ -10,21 +10,58 @@ BVHNode::~BVHNode()
 void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 {
 	float3 invD = 1.0f / ray.m_Direction;
-	float3 t0 = (bounds.minBounds - ray.m_Origin) * invD;
-	float3 t1 = (bounds.maxBounds - ray.m_Origin) * invD;
+	float3 min = bounds.minBounds;
+	float3 max = bounds.maxBounds;
 
-	if (invD.x < 0.0f || invD.y < 0.0f || invD.z < 0.0f)
+	float tmin = (min.x - ray.m_Origin.x) * invD.x;
+	float tmax = (max.x - ray.m_Origin.x) * invD.x;
+
+	if (tmin > tmax) 
 	{
-		if (m_IsLeaf)
-		{
-			// True.
-			hitNode.push_back(*this);
-		}
-		else
-		{
-			m_Left->Intersect(ray, hitNode);
-			m_Right->Intersect(ray, hitNode);
-		}
+		std::swap(tmin, tmax);
+	}
+
+	float tymin = (min.y - ray.m_Origin.y) * invD.y;
+	float tymax = (max.y - ray.m_Origin.y) * invD.y;
+
+	if (tymin > tymax) 
+	{
+		std::swap(tymin, tymax);
+	}
+
+	if ((tmin > tymax) || (tymin > tmax)) 
+	{
+		return;
+	}
+
+	tmin = std::fmax(tymin, tmin);
+	tmax = std::fmin(tymax, tmax);
+
+	float tzmin = (min.z - ray.m_Origin.z) * invD.z;
+	float tzmax = (max.z - ray.m_Origin.z) * invD.z;
+
+	if (tzmin > tzmax) 
+	{
+		std::swap(tzmin, tzmax);
+	}
+
+	if ((tmin > tzmax) || (tzmin > tmax)) 
+	{
+		return;
+	}
+
+	tmin = std::fmax(tzmin, tmin);
+	tmax = std::fmin(tzmax, tmax);
+
+	if (m_IsLeaf)
+	{
+		// True.
+		hitNode.push_back(*this);
+	}
+	else
+	{
+		m_Left->Intersect(ray, hitNode);
+		m_Right->Intersect(ray, hitNode);
 	}
 }
 
@@ -34,6 +71,8 @@ void BVHNode::SetupRoot(Mesh& mesh)
 	{
 		primitives.push_back(mesh.triangles[i]);
 	}
+
+	m_IsLeaf = false;
 
 	CalculateBounds();
 	SubDivide();
@@ -74,6 +113,8 @@ void BVHNode::SubDivide()
 	// Termination criterion
 	if (primitives.size() < 2 || depth >= 1)
 	{
+		m_Root->m_IsLeaf = false;
+
 		m_Root->m_Left->m_IsLeaf = true;
 		m_Root->m_Right->m_IsLeaf = true;
 
@@ -87,7 +128,6 @@ void BVHNode::SubDivide()
 
 	// Check whether the primitives were split. If not, that means it can not be split any further, thus return
 	if (m_Root != NULL && primitives.size() == m_Root->primitives.size()) {
-		m_Root->m_IsLeaf = true;
 		return;
 	}
 	
