@@ -1,7 +1,4 @@
 #include "BVHNode.h"
-#include <iostream>
-
-static float depth = 0;
 
 BVHNode::~BVHNode()
 {
@@ -137,8 +134,6 @@ void BVHNode::SubDivide()
 
 	m_Left->SubDivide();
 	m_Right->SubDivide();
-
-	depth++;
 }
 
 // Split the primitives over left and right child
