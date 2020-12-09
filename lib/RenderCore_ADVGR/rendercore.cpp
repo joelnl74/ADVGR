@@ -131,8 +131,6 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	vector<BVHNode> nodes = {};
 	root->Intersect(ray, nodes);
 
-	cout << nodes.size() << endl;
-
 	if (nodes.size() == 0)
 	{
 		return make_tuple(tri, t_min, normal, coreMaterial);

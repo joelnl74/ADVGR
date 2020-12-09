@@ -111,10 +111,8 @@ void BVHNode::SubDivide()
 {	
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (primitives.size() < 2 || depth >= 1)
+	if (primitives.size() < 2)
 	{
-		m_Root->m_IsLeaf = false;
-
 		m_Root->m_Left->m_IsLeaf = true;
 		m_Root->m_Right->m_IsLeaf = true;
 
@@ -146,27 +144,6 @@ void BVHNode::SubDivide()
 // Split the primitives over left and right child
 void BVHNode::Partition()
 {
-	// Make a middle split along the axis with the longest side
-	float3 splitePlane = bounds.minBounds + bounds.maxBounds / 2;
-
-	for (auto& primitive : primitives)
-	{
-		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-
-		if (splitePlane.x > centroid.x)
-		{
-			m_Left->primitives.push_back(primitive);
-		}
-		else
-		{
-			m_Right->primitives.push_back(primitive);
-		}
-	}
-
-	// Test
-	return;
-
-
 	// Make a middle split along the axis with the longest side
 	float longestX = abs(bounds.maxBounds.x - bounds.minBounds.x);
 	float longestY = abs(bounds.maxBounds.y - bounds.minBounds.y);
