@@ -46,14 +46,14 @@ void PrepareScene()
 	}
 	else
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene.obj", 0.1f);
+		sceneMesh = renderer->AddMesh("../_shareddata/teapot.obj", 0.05);
 	}
 
 	renderer->AddInstance(sceneMesh);
-	renderer->AddPointLight(make_float3(0, 15, 8), 50 * make_float3(10, 10, 10));
+	renderer->AddPointLight(make_float3(0, 20, 0), 50 * make_float3(10, 10, 10));
 	
-	renderer->GetCamera()->TranslateRelative(make_float3(0, 5, -10));
-	renderer->GetCamera()->SetMatrix(renderer->GetCamera()->GetMatrix() * mat4::RotateX(0.25));
+	renderer->GetCamera()->TranslateRelative(make_float3(0, 2.5, -15));
+	//renderer->GetCamera()->SetMatrix(renderer->GetCamera()->GetMatrix() * mat4::RotateX(0.25));
 	renderer->GetCamera()->Changed();
 
 	auto scene = renderer->GetScene();
@@ -150,6 +150,7 @@ int main()
 		// finalize
 		glfwSwapBuffers( window );
 		glfwPollEvents();
+
 		if (!running) break; // esc was pressed
 	}
 	// clean up

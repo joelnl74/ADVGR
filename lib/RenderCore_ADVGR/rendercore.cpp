@@ -66,11 +66,13 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
+	renderTimer.reset();
+
 	float dx = 1.0f / (SCRWIDTH - 1);
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
 	// For anti aliasing
-	float samplingRate = 2;
+	float samplingRate = 1;
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> dist(0, 1);
@@ -90,11 +92,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 				// direction
 				float3 direction = normalize(point - view.pos);
 
-				ray.t = INT_MAX;
 				ray.m_Origin = view.pos;
 				ray.m_Direction = direction;
 
-				screenData[x + y * SCRWIDTH] += Trace(ray, 0, x, y);
+				screenData[x + y * SCRWIDTH] += Trace(ray, 0);
 			}
 
 			screenData[x + y * SCRWIDTH] /= samplingRate + 1;
@@ -116,6 +117,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	// Copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, SCRWIDTH, SCRHEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels);
+
+	coreStats.renderTime = renderTimer.elapsed();
 }
 
 tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
@@ -125,25 +128,30 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	CoreMaterial coreMaterial;
 	float3 normal = make_float3(0);
 
-	vector<CoreTri> primitives = root->Intersect(ray);
-	int size = primitives.size();
+	vector<BVHNode> nodes = {};
+	root->Intersect(ray, nodes);
 
-	if (size == 0)
+	if (nodes.size() == 0)
 	{
 		return make_tuple(tri, t_min, normal, coreMaterial);
 	}
 
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < nodes.size(); i++)
 	{
-		// Check if we are able to intersect a triangle. If not, max float is returned
-		float t = Utils::IntersectTriangle(ray, primitives[i].vertex0, primitives[i].vertex1, primitives[i].vertex2);
-			
-		if (t < t_min)
+		vector<CoreTri> primitives = nodes[i].primitives;
+
+		for (int j = 0; j < primitives.size(); j++)
 		{
-			t_min = t;
-			tri = primitives[i];
-			coreMaterial = materials[tri.material];
-			normal = make_float3(primitives[i].Nx, primitives[i].Ny, primitives[i].Nz);
+			// Check if we are able to intersect a triangle. If not, max float is returned
+			float t = Utils::IntersectTriangle(ray, primitives[j].vertex0, primitives[j].vertex1, primitives[j].vertex2);
+
+			if (t < t_min)
+			{
+				t_min = t;
+				tri = primitives[j];
+				coreMaterial = materials[tri.material];
+				normal = make_float3(primitives[j].Nx, primitives[j].Ny, primitives[j].Nz);
+			}
 		}
 	}
 
@@ -159,11 +167,10 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
 		}
 	}
-
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
-float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
+float3 RenderCore::Trace(Ray ray, int depth)
 {
 	tuple intersect = Intersect(ray);
 
@@ -278,18 +285,14 @@ float3 RenderCore::Trace(Ray ray, int depth, int x, int y)
 float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, float3& m_color, CoreMaterial& material)
 {
 	float3 color = make_float3(0, 0, 0);
-	int lightSourceCount = m_pointLights.size() + m_directionalLight.size() + m_coreTriLight.size() + m_spotLights.size();
+	int lightSourceCount = m_pointLights.size();
 
 	for (CorePointLight& light : m_pointLights)
 	{
-		float3 direction = light.position - origin;
-		float distanceToLight = length(direction);
+		ray.m_Origin = origin;
+		ray.m_Direction = normalize(light.position - origin);
 
-		Ray shadowRay;
-		shadowRay.m_Origin = origin;
-		shadowRay.m_Direction = normalize(direction);
-
-		tuple intersect = Intersect(shadowRay);
+		tuple intersect = Intersect(ray);
 
 		float t_min = get<1>(intersect);
 
@@ -339,7 +342,7 @@ float3 RenderCore::CalculateLightContribution(float3& origin, float3& normal, fl
 		color += ka * ambient + kd * lambertian * m_color + ks * specular * make_float3(1, 1, 1);
 	}
 
-	return color / 1.0f;
+	return color / lightSourceCount;
 }
 
 float3 RenderCore::Reflect(float3& in, float3 normal)
