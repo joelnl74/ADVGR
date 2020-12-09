@@ -70,7 +70,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	float dy = 1.0f / (SCRHEIGHT - 1);
 
 	// For anti aliasing
-	float samplingRate = 2;
+	float samplingRate = 1;
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<> dist(0, 1);
@@ -127,7 +127,7 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 
 	vector<BVHNode> nodes = {};
 	root->Intersect(ray, nodes);
-
+	
 	if (nodes.size() == 0)
 	{
 		return make_tuple(tri, t_min, normal, coreMaterial);
@@ -164,7 +164,6 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
 		}
 	}
-
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 

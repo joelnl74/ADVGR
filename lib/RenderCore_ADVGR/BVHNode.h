@@ -9,11 +9,11 @@ class BVHNode
 {
 public:
 	~BVHNode();
-	void Intersect(Ray& ray, vector<BVHNode>& hitPrim);
+	void Intersect(Ray& ray, vector<BVHNode>& hitNode);
 	void SetupRoot(Mesh& mesh);
 	void CalculateBounds();
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
-	void SubDivide(int depth);
+	void SubDivide();
 	void Partition();
 
 public:

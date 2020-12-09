@@ -33,7 +33,7 @@ void BVHNode::SetupRoot(Mesh& mesh)
 	}
 
 	CalculateBounds();
-	SubDivide(1);
+	SubDivide();
 }
 
 void BVHNode::CalculateBounds()
@@ -65,11 +65,11 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 	return vertex0 + vertex1 + vertex2 / 3.0f;
 }
 
-void BVHNode::SubDivide(int depth)
+void BVHNode::SubDivide()
 {	
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (depth > 5)
+	if (primitives.size() < 2)
 	{
 		m_Root->m_Left->m_IsLeaf = true;
 		m_Root->m_Right->m_IsLeaf = true;
@@ -81,6 +81,12 @@ void BVHNode::SubDivide(int depth)
 	m_Right = new BVHNode();
 
 	Partition();
+
+	// Check whether the primitives were split. If not, that means it can not be split any further, thus return
+	if (m_Root != NULL && primitives.size() == m_Root->primitives.size()) {
+		m_Root->m_IsLeaf = true;
+		return;
+	}
 	
 	m_Left->m_Root = this;
 	m_Right->m_Root = this;
@@ -88,8 +94,8 @@ void BVHNode::SubDivide(int depth)
 	m_Left->CalculateBounds();
 	m_Right->CalculateBounds();
 
-	m_Left->SubDivide(depth + 1);
-	m_Right->SubDivide(depth + 1);
+	m_Left->SubDivide();
+	m_Right->SubDivide();
 }
 
 // Split the primitives over left and right child
@@ -106,17 +112,17 @@ void BVHNode::Partition()
 	float splitplane;
 	if (splitAxis == longestX)
 	{
-		splitplane = longestX / 2;
+		splitplane = bounds.maxBounds.x - (longestX / 2);
 		axis = Axis::X;
 	}
 	else if (splitAxis == longestY)
 	{
-		splitplane = longestY / 2;
+		splitplane = bounds.maxBounds.y - (longestY / 2);
 		axis = Axis::Y;
 	}
 	else
 	{
-		splitplane = longestZ / 2;
+		splitplane = bounds.maxBounds.z - (longestZ / 2);
 		axis = Axis::Z;
 	}
 
@@ -149,5 +155,5 @@ void BVHNode::Partition()
 		}
 	}
 
-	primitives.clear();
+	
 }
