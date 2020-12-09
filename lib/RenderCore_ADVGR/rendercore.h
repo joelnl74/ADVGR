@@ -47,7 +47,7 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	float3 Trace(Ray ray, int depth = 0, int x = 0, int y = 0);
+	float3 Trace(Ray ray, int depth = 0);
 	tuple<CoreTri, float, float3, CoreMaterial> Intersect(Ray ray);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
 	float3 Reflect(float3& in, float3 normal);
@@ -68,6 +68,7 @@ private:
 	Bitmap* screen = 0;								// temporary storage of RenderCore output; will be copied to render target
 	int targetTextureID = 0;						// ID of the target OpenGL texture
 	vector<Mesh> meshes;							// mesh data storage
+	Timer renderTimer;								// timers for asynchronous rendering
 public:
 	CoreStats coreStats;							// rendering statistics
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];

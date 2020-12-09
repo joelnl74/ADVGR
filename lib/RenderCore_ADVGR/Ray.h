@@ -11,5 +11,4 @@ public:
 
 	float3 m_Origin;
 	float3 m_Direction;
-	float t;
 };
