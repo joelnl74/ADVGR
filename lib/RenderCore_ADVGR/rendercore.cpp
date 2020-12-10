@@ -140,13 +140,12 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 
 	for (int i = 0; i < nodes.size(); i++)
 	{
-		int size = nodes[i].m_Indices.size();
-		auto& nodeIndices = nodes[i].m_Indices;
+		int startIndex = nodes[i].startLeft;
+		int size = startIndex + nodes[i].count;
 
-		for (int j = 0; j < size; j++)
+		for (int j = startIndex; j < size; j++)
 		{
-			int index = nodeIndices[j];
-			auto& coreTri = BVH::primitives[index];
+			auto& coreTri = BVH::primitives[j];
 
 			// Check if we are able to intersect a triangle. If not, max float is returned
 			float t = Utils::IntersectTriangle(ray, coreTri.vertex0, coreTri.vertex1, coreTri.vertex2);

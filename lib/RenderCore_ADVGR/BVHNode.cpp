@@ -49,15 +49,15 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 	tmin = std::fmax(tzmin, tmin);
 	tmax = std::fmin(tzmax, tmax);
 
-	if (m_IsLeaf)
+	if (count > 0)
 	{
 		// True.
 		hitNode.push_back(*this);
 	}
 	else
 	{
-		m_Left->Intersect(ray, hitNode);
-		m_Right->Intersect(ray, hitNode);
+		BVH::pool[BVH::poolPtr++]->Intersect(ray, hitNode);
+		BVH::pool[BVH::poolPtr++]->Intersect(ray, hitNode);
 	}
 }
 
@@ -66,11 +66,9 @@ void BVHNode::CalculateBounds()
 	float3 minBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
 
-	int size = m_Indices.size();
-
-	for (int i = 0; i < size; i++)
+	for (int i = startLeft; i < startLeft + count; i++)
 	{
-		int index = m_Indices[i];
+		int index = BVH::indices[i];
 		CoreTri primitive = BVH::primitives[index];
 
 		float3 vertex0 = primitive.vertex0;
@@ -97,35 +95,25 @@ void BVHNode::SubDivide()
 {	
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (m_Indices.size() < 2)
+	if (count < 3)
 	{
-		m_Root->m_Left->m_IsLeaf = true;
-		m_Root->m_Right->m_IsLeaf = true;
 		return;
 	}
 
-	m_Left = new BVHNode();
-	m_Right = new BVHNode();
+	BVHNode *left = BVH::pool[BVH::poolPtr++];
+	BVHNode *right = BVH::pool[BVH::poolPtr++];
 
-	Partition();
+	Partition(*left, *right);
 
-	// Check whether the primitives were split. If not, that means it can not be split any further, thus return
-	if (m_Root != NULL && m_Indices.size() == m_Root->m_Indices.size()) {
-		return;
-	}
-	
-	m_Left->m_Root = this;
-	m_Right->m_Root = this;
-	
-	m_Left->CalculateBounds();
-	m_Right->CalculateBounds();
+	left->CalculateBounds();
+	right->CalculateBounds();
 
-	m_Left->SubDivide();
-	m_Right->SubDivide();
+	left->SubDivide();
+	right->SubDivide();
 }
 
 // Split the primitives over left and right child
-void BVHNode::Partition()
+void BVHNode::Partition(BVHNode& left, BVHNode& right)
 {
 	// Make a middle split along the axis with the longest side
 	float longestX = abs(bounds.maxBounds.x - bounds.minBounds.x);
@@ -152,33 +140,48 @@ void BVHNode::Partition()
 		axis = Axis::Z;
 	}
 
-	for (auto& index : m_Indices) 
+	//TODO set starting index based on if we splitting right or left otherwise both nodes wil have the same childeren.
+	left.startLeft = startLeft;
+	right.startLeft = startLeft;
+
+	for (int i = startLeft; i < startLeft + count; i++) 
 	{
-		CoreTri primitive = BVH::primitives[index];
+		CoreTri primitive = BVH::primitives[i];
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
+
 
 		switch (axis) 
 		{
 		case Axis::X:
 			if (centroid.x < splitplane)
-				m_Left->m_Indices.push_back(index);
+			{
+				left.count++;
+			}
 			else
-				m_Right->m_Indices.push_back(index);
+			{
+				right.count++;
+			}
 			break;
 		case Axis::Y:
 			if (centroid.y < splitplane)
-				m_Left->m_Indices.push_back(index);
+			{
+				left.count++;
+			}
 			else
-				m_Right->m_Indices.push_back(index);
+			{
+				right.count++;
+			}
 			break;
 		case Axis::Z:
 			if (centroid.z < splitplane)
-				m_Left->m_Indices.push_back(index);
+			{
+				left.count++;
+			}
 			else
-				m_Right->m_Indices.push_back(index);
+			{
+				right.count++;
+			}
 			break;
-		default:
-			return;
 		}
 	}
 }

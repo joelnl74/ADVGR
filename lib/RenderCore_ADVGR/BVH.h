@@ -6,7 +6,8 @@ class BVH
 public:
 	static std::vector<CoreTri> primitives;
 	static std::vector<int> indices;
-	static std::vector<BVHNode> pool;
+	static std::vector<BVHNode*> pool;
+	static int poolPtr;
 
 	BVHNode* root;
 
