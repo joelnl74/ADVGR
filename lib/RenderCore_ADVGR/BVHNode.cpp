@@ -49,7 +49,7 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 	tmin = std::fmax(tzmin, tmin);
 	tmax = std::fmin(tzmax, tmax);
 
-	if (count > 0)
+	if (IsLeaf())
 	{
 		// True.
 		hitNode.push_back(*this);
@@ -59,6 +59,11 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 		BVH::pool[BVH::poolPtr++]->Intersect(ray, hitNode);
 		BVH::pool[BVH::poolPtr++]->Intersect(ray, hitNode);
 	}
+}
+
+bool BVHNode::IsLeaf()
+{
+	return count < BVH::leafNodeCount;
 }
 
 void BVHNode::CalculateBounds()
@@ -95,7 +100,7 @@ void BVHNode::SubDivide()
 {	
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (count < 3)
+	if (IsLeaf())
 	{
 		return;
 	}

@@ -11,6 +11,7 @@ class BVHNode
 {
 public:
 	void Intersect(Ray& ray, vector<BVHNode>& hitNode);
+	bool IsLeaf();
 	void CalculateBounds();
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
 	void SubDivide();

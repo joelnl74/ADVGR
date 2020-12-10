@@ -7,7 +7,8 @@ public:
 	static std::vector<CoreTri> primitives;
 	static std::vector<int> indices;
 	static std::vector<BVHNode*> pool;
-	static int poolPtr;
+	static uint poolPtr;
+	static uint leafNodeCount;
 
 	BVHNode* root;
 

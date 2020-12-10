@@ -3,7 +3,8 @@
 vector<int> BVH::indices;
 vector<CoreTri> BVH::primitives;
 vector<BVHNode*> BVH::pool;
-int BVH::poolPtr;
+uint BVH::poolPtr;
+uint BVH::leafNodeCount;
 
 void BVH::ConsturctBVH(Mesh& mesh)
 {
@@ -15,12 +16,13 @@ void BVH::ConsturctBVH(Mesh& mesh)
 		BVH::indices.push_back(i);
 	}
 
+	leafNodeCount = 3;
+
 	uint N = primitives.size();
 	uint MaxNodes = N * 2 - 1;
 
 	root = pool[0];
 	poolPtr = 1;
-
 
 	pool.resize(MaxNodes);
 
