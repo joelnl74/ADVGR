@@ -2,6 +2,7 @@
 
 vector<int> BVH::indices;
 vector<CoreTri> BVH::primitives;
+vector<BVHNode> BVH::pool;
 
 void BVH::ConsturctBVH(Mesh& mesh)
 {
@@ -16,6 +17,8 @@ void BVH::ConsturctBVH(Mesh& mesh)
 
 	uint N = primitives.size();
 	uint MaxNodes = N * 2 - 1;
+
+	pool.resize(MaxNodes);
 
 	root->CalculateBounds();
 	root->SubDivide();
