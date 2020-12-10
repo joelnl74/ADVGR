@@ -1,8 +1,7 @@
 #include "BVHNode.h"
 
-BVHNode::~BVHNode()
-{
-}
+vector<int> BVH::indices;
+vector<CoreTri> BVH::primitives;
 
 void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 {
@@ -66,10 +65,10 @@ void BVHNode::SetupRoot(Mesh& mesh)
 {
 	for (int i = 0; i < mesh.vcount / 3; i++)
 	{
-		primitives.push_back(mesh.triangles[i]);
+		BVH::primitives.push_back(mesh.triangles[i]);
+		BVH::indices.push_back(i);
+		m_Indices.push_back(i);
 	}
-
-	m_IsLeaf = false;
 
 	CalculateBounds();
 	SubDivide();
@@ -80,13 +79,16 @@ void BVHNode::CalculateBounds()
 	float3 minBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
 
-	int size = primitives.size();
+	int size = m_Indices.size();
 
 	for (int i = 0; i < size; i++)
 	{
-		float3 vertex0 = primitives[i].vertex0;
-		float3 vertex1 = primitives[i].vertex1;
-		float3 vertex2 = primitives[i].vertex2;
+		int index = m_Indices[i];
+		CoreTri primitive = BVH::primitives[index];
+
+		float3 vertex0 = primitive.vertex0;
+		float3 vertex1 = primitive.vertex1;
+		float3 vertex2 = primitive.vertex2;
 
 		float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
 		float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
@@ -108,11 +110,10 @@ void BVHNode::SubDivide()
 {	
 	// TODO: Change 10 into a variable
 	// Termination criterion
-	if (primitives.size() < 2)
+	if (m_Indices.size() < 2)
 	{
 		m_Root->m_Left->m_IsLeaf = true;
 		m_Root->m_Right->m_IsLeaf = true;
-
 		return;
 	}
 
@@ -122,7 +123,7 @@ void BVHNode::SubDivide()
 	Partition();
 
 	// Check whether the primitives were split. If not, that means it can not be split any further, thus return
-	if (m_Root != NULL && primitives.size() == m_Root->primitives.size()) {
+	if (m_Root != NULL && m_Indices.size() == m_Root->m_Indices.size()) {
 		return;
 	}
 	
@@ -164,34 +165,33 @@ void BVHNode::Partition()
 		axis = Axis::Z;
 	}
 
-	for (auto& primitive : primitives) 
+	for (auto& index : m_Indices) 
 	{
+		CoreTri primitive = BVH::primitives[index];
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 
 		switch (axis) 
 		{
 		case Axis::X:
 			if (centroid.x < splitplane)
-				m_Left->primitives.push_back(primitive);
+				m_Left->m_Indices.push_back(index);
 			else
-				m_Right->primitives.push_back(primitive);
+				m_Right->m_Indices.push_back(index);
 			break;
 		case Axis::Y:
 			if (centroid.y < splitplane)
-				m_Left->primitives.push_back(primitive);
+				m_Left->m_Indices.push_back(index);
 			else
-				m_Right->primitives.push_back(primitive);
+				m_Right->m_Indices.push_back(index);
 			break;
 		case Axis::Z:
 			if (centroid.z < splitplane)
-				m_Left->primitives.push_back(primitive);
+				m_Left->m_Indices.push_back(index);
 			else
-				m_Right->primitives.push_back(primitive);
+				m_Right->m_Indices.push_back(index);
 			break;
 		default:
 			return;
 		}
 	}
-
-	
 }
