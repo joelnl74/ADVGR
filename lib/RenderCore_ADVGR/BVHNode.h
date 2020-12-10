@@ -3,12 +3,19 @@
 #include "AABB.h"
 #include "Ray.h"
 #include "Mesh.h"
+
 using namespace lighthouse2;
+
+class BVH
+{
+public:
+	static std::vector<CoreTri> primitives;
+	static std::vector<int> indices;
+};
 
 class BVHNode
 {
 public:
-	~BVHNode();
 	void Intersect(Ray& ray, vector<BVHNode>& hitNode);
 	void SetupRoot(Mesh& mesh);
 	void CalculateBounds();
@@ -22,7 +29,7 @@ public:
 	BVHNode* m_Left;
 	bool m_IsLeaf;
 	AABB bounds;
-	vector<CoreTri> primitives;
+	vector<int> m_Indices;
 
 enum class Axis
 {

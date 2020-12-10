@@ -18,6 +18,8 @@
 
 using namespace lh2core;
 
+
+
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Init                                                           |
 //  |  Initialization.                                                      LH2'19|
@@ -138,35 +140,27 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 
 	for (int i = 0; i < nodes.size(); i++)
 	{
-		vector<CoreTri> primitives = nodes[i].primitives;
+		int size = nodes[i].m_Indices.size();
+		auto& nodeIndices = nodes[i].m_Indices;
 
-		for (int j = 0; j < primitives.size(); j++)
+		for (int j = 0; j < size; j++)
 		{
+			int index = nodeIndices[j];
+			auto& coreTri = BVH::primitives[index];
+
 			// Check if we are able to intersect a triangle. If not, max float is returned
-			float t = Utils::IntersectTriangle(ray, primitives[j].vertex0, primitives[j].vertex1, primitives[j].vertex2);
+			float t = Utils::IntersectTriangle(ray, coreTri.vertex0, coreTri.vertex1, coreTri.vertex2);
 
 			if (t < t_min)
 			{
 				t_min = t;
-				tri = primitives[j];
+				tri = coreTri;
 				coreMaterial = materials[tri.material];
-				normal = make_float3(primitives[j].Nx, primitives[j].Ny, primitives[j].Nz);
+				normal = make_float3(coreTri.Nx, coreTri.Ny, coreTri.Nz);
 			}
 		}
 	}
 
-	for (auto& sphere : m_spheres)
-	{
-		// Check if we are able to intersect a sphere. If not, max float is returned
-		float t = Utils::IntersectSphere(ray, sphere);
-
-		if (t < t_min)
-		{
-			t_min = t;
-			coreMaterial = sphere.m_Material;
-			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
-		}
-	}
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
