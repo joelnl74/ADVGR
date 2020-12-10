@@ -14,6 +14,9 @@ void BVH::ConsturctBVH(Mesh& mesh)
 		root->m_Indices.push_back(i);
 	}
 
+	uint N = primitives.size();
+	uint MaxNodes = N * 2 - 1;
+
 	root->CalculateBounds();
 	root->SubDivide();
 }
