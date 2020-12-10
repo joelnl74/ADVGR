@@ -6,7 +6,8 @@ class BVH
 public:
 	static std::vector<CoreTri> primitives;
 	static std::vector<int> indices;
-	
+	static std::vector<BVHNode> pool;
+
 	BVHNode* root;
 
 	void ConsturctBVH(Mesh& mesh);
