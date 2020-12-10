@@ -58,8 +58,8 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	memcpy(newMesh.triangles, triangleData, (vertexCount / 3) * sizeof(CoreTri));
 	meshes.push_back(newMesh);
 
-	root = new BVHNode();
-	root->SetupRoot(newMesh);
+	bvh = new BVH();
+	bvh->ConsturctBVH(newMesh);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -131,7 +131,7 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	float3 normal = make_float3(0);
 
 	vector<BVHNode> nodes = {};
-	root->Intersect(ray, nodes);
+	bvh->Intersect(ray, nodes);
 
 	if (nodes.size() == 0)
 	{

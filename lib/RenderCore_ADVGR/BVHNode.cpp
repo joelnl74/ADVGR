@@ -1,7 +1,7 @@
 #include "BVHNode.h"
+#include "BVH.h"
 
-vector<int> BVH::indices;
-vector<CoreTri> BVH::primitives;
+
 
 void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 {
@@ -59,19 +59,6 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 		m_Left->Intersect(ray, hitNode);
 		m_Right->Intersect(ray, hitNode);
 	}
-}
-
-void BVHNode::SetupRoot(Mesh& mesh)
-{
-	for (int i = 0; i < mesh.vcount / 3; i++)
-	{
-		BVH::primitives.push_back(mesh.triangles[i]);
-		BVH::indices.push_back(i);
-		m_Indices.push_back(i);
-	}
-
-	CalculateBounds();
-	SubDivide();
 }
 
 void BVHNode::CalculateBounds()

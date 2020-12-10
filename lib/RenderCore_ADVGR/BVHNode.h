@@ -6,18 +6,11 @@
 
 using namespace lighthouse2;
 
-class BVH
-{
-public:
-	static std::vector<CoreTri> primitives;
-	static std::vector<int> indices;
-};
 
 class BVHNode
 {
 public:
 	void Intersect(Ray& ray, vector<BVHNode>& hitNode);
-	void SetupRoot(Mesh& mesh);
 	void CalculateBounds();
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
 	void SubDivide();

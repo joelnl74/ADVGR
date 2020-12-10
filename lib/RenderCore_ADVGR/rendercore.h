@@ -16,7 +16,7 @@
 #pragma once
 #include "Ray.h"
 #include "Sphere.h"
-#include "BVHNode.h"
+#include "BVH.h"
 #include "Mesh.h"
 
 namespace lh2core
@@ -94,7 +94,7 @@ public:
 	vector<Sphere> m_spheres;
 
 	Ray ray;
-	BVHNode* root;
+	BVH* bvh;
 
 	int maxDepth = 3;
 };
