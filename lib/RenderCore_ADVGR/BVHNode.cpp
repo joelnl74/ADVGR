@@ -98,7 +98,6 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 
 void BVHNode::SubDivide()
 {	
-	// TODO: Change 10 into a variable
 	// Termination criterion
 	if (IsLeaf())
 	{

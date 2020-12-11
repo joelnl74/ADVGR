@@ -1,4 +1,6 @@
 #include "BVH.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 vector<int> BVH::indices;
 vector<CoreTri> BVH::primitives;
@@ -8,8 +10,6 @@ uint BVH::leafNodeCount;
 
 void BVH::ConsturctBVH(Mesh& mesh)
 {
-	root = new BVHNode();
-
 	for (int i = 0; i < mesh.vcount / 3; i++)
 	{
 		BVH::primitives.push_back(mesh.triangles[i]);
@@ -21,10 +21,15 @@ void BVH::ConsturctBVH(Mesh& mesh)
 	uint N = primitives.size();
 	uint MaxNodes = N * 2 - 1;
 
+	pool.resize(MaxNodes);
+
+	for (int i = 0; i < MaxNodes; i++)
+	{
+		pool[i] = new BVHNode();
+	}
+
 	root = pool[0];
 	poolPtr = 1;
-
-	pool.resize(MaxNodes);
 
 	root->startLeft = 0;
 	root->count = N;
