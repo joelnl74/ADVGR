@@ -107,7 +107,7 @@ void BVHNode::SubDivide()
 	BVHNode *left = BVH::pool[BVH::poolPtr++];
 	BVHNode *right = BVH::pool[BVH::poolPtr++];
 
-	Partition(*left, *right);
+	Partition(left, right);
 
 	left->CalculateBounds();
 	right->CalculateBounds();
@@ -117,7 +117,7 @@ void BVHNode::SubDivide()
 }
 
 // Split the primitives over left and right child
-void BVHNode::Partition(BVHNode& left, BVHNode& right)
+void BVHNode::Partition(BVHNode* left, BVHNode* right)
 {
 	// Make a middle split along the axis with the longest side
 	float longestX = abs(bounds.maxBounds.x - bounds.minBounds.x);
@@ -145,8 +145,8 @@ void BVHNode::Partition(BVHNode& left, BVHNode& right)
 	}
 
 	//TODO set starting index based on if we splitting right or left otherwise both nodes wil have the same childeren.
-	left.startLeft = startLeft;
-	right.startLeft = startLeft;
+	left->startLeft = startLeft;
+	right->startLeft = startLeft;
 
 	for (int i = startLeft; i < startLeft + count; i++) 
 	{
@@ -159,31 +159,31 @@ void BVHNode::Partition(BVHNode& left, BVHNode& right)
 		case Axis::X:
 			if (centroid.x < splitplane)
 			{
-				left.count++;
+				left->count++;
 			}
 			else
 			{
-				right.count++;
+				right->count++;
 			}
 			break;
 		case Axis::Y:
 			if (centroid.y < splitplane)
 			{
-				left.count++;
+				left->count++;
 			}
 			else
 			{
-				right.count++;
+				right->count++;
 			}
 			break;
 		case Axis::Z:
 			if (centroid.z < splitplane)
 			{
-				left.count++;
+				left->count++;
 			}
 			else
 			{
-				right.count++;
+				right->count++;
 			}
 			break;
 		}

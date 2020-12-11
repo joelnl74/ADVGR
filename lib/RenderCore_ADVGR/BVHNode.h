@@ -15,7 +15,7 @@ public:
 	void CalculateBounds();
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
 	void SubDivide();
-	void Partition(BVHNode &left, BVHNode &right);
+	void Partition(BVHNode* left, BVHNode* right);
 
 public:
 	AABB bounds;
