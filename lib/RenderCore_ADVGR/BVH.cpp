@@ -16,7 +16,7 @@ void BVH::ConsturctBVH(Mesh& mesh)
 		BVH::indices.push_back(i);
 	}
 
-	leafNodeCount = 3;
+	leafNodeCount = 13;
 
 	uint N = primitives.size();
 	uint MaxNodes = N * 2 - 1;
