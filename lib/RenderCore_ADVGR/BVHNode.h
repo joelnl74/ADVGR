@@ -6,7 +6,6 @@
 
 using namespace lighthouse2;
 
-
 class BVHNode
 {
 public:
@@ -19,7 +18,11 @@ public:
 
 public:
 	AABB bounds;
+	// In the case of an interior node, this integer will be the address of the left child;
+	// The right child will always be this index + 1.
+	// If it is a leaf node, this will be the index of the first primitive in this node.
 	int startLeft;
+	// The number of primitives in this node
 	int count;
 enum class Axis
 {

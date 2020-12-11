@@ -12,6 +12,6 @@ public:
 
 	BVHNode* root;
 
-	void ConsturctBVH(Mesh& mesh);
+	void ConstructBVH(Mesh& mesh);
 	void Intersect(Ray& ray, vector<BVHNode>& hitNode);
 };

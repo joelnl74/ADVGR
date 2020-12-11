@@ -59,7 +59,7 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	meshes.push_back(newMesh);
 
 	bvh = new BVH();
-	bvh->ConsturctBVH(newMesh);
+	bvh->ConstructBVH(newMesh);
 }
 
 //  +-----------------------------------------------------------------------------+
