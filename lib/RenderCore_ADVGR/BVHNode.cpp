@@ -60,7 +60,10 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 
 bool BVHNode::IsLeaf()
 {
-	return count < BVH::leafNodeCount;
+	if (count != 0)
+		return count < BVH::leafNodeCount;
+	else
+		return false;
 }
 
 void BVHNode::CalculateBounds()
