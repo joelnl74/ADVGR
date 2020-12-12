@@ -119,7 +119,7 @@ void BVHNode::SubDivide()
 	m_Left = new BVHNode();
 	m_Right = new BVHNode();
 
-	Partition();
+	Partition_SAH();
 
 	// Check whether the primitives were split. If not, that means it can not be split any further, thus return
 	if (m_Root != NULL && primitives.size() == m_Root->primitives.size()) {
@@ -138,94 +138,53 @@ void BVHNode::SubDivide()
 
 void BVHNode::Partition_SAH()
 {
-	float minCoordXLeft = numeric_limits<float>::max();
-	float maxCoordXLeft = numeric_limits<float>::min();
-	float minCoordYLeft = numeric_limits<float>::max();
-	float maxCoordYLeft = numeric_limits<float>::min();
-	float minCoordZLeft = numeric_limits<float>::max();
-	float maxCoordZLeft = numeric_limits<float>::min();
-
-	float minCoordXRight = numeric_limits<float>::max();
-	float maxCoordXRight = numeric_limits<float>::min();
-	float minCoordYRight = numeric_limits<float>::max();
-	float maxCoordYRight = numeric_limits<float>::min();
-	float minCoordZRight = numeric_limits<float>::max();
-	float maxCoordZRight = numeric_limits<float>::min();
+	float3 minCoordLeft = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
+	float3 maxCoordLeft = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
+	float3 minCoordRight = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
+	float3 maxCoordRight = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
 
 	Axis axis;
 
 	float bestSplit;
-	float bestArea = numeric_limits<float>::min();;
+	float bestArea = numeric_limits<float>::max();;
 
-	// Make a split at each primitive
+	// Make a split at the centroid of each primitive
 	for (auto& primitive : primitives)
 	{
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-		float split = centroid.x;
+		float currentSplit = centroid.x;
 
 		uint leftPrimitives = 0;
 		uint rightPrimitives = 0;
-		// Divide the other primitives over these splits
+		// Divide the other primitives over the split
 		for (auto& primitive : primitives)
 		{
 			float3 centroid2 = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
+			float3 minValues = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
+			float3 maxValues = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
 
-			if (centroid2.x <= split)
+			if (centroid2.x <= currentSplit)
 			{
 				leftPrimitives++;
-
-				float currentMinCoordX = min(min(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
-				float currentMaxCoordX = max(max(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
-				if (currentMinCoordX < minCoordXLeft)
-					minCoordXLeft = currentMinCoordX;
-				if (currentMaxCoordX < maxCoordXLeft)
-					maxCoordXLeft = currentMaxCoordX;
-
-				float currentMinCoordY = min(min(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
-				float currentMaxCoordY = max(max(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
-				if (currentMinCoordY < minCoordYLeft)
-					minCoordYLeft = currentMinCoordY;
-				if (currentMaxCoordY < maxCoordYLeft)
-					maxCoordYLeft = currentMaxCoordY;
-
-				float currentMinCoordZ = min(min(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
-				float currentMaxCoordZ = max(max(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
-				if (currentMinCoordZ < minCoordZLeft)
-					minCoordZLeft = currentMinCoordZ;
-				if (currentMaxCoordZ < maxCoordZLeft)
-					maxCoordZLeft = currentMaxCoordZ;
+				minCoordLeft = fminf(minCoordLeft, minValues);
+				maxCoordLeft = fminf(maxCoordLeft, maxValues);
 			}
 			else
 			{
 				rightPrimitives++;
-				float currentMinCoordX = min(min(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
-				float currentMaxCoordX = max(max(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
-				if (currentMinCoordX < minCoordXRight)
-					minCoordXRight = currentMinCoordX;
-				if (currentMaxCoordX < maxCoordXRight)
-					maxCoordXRight = currentMaxCoordX;
-
-				float currentMinCoordY = min(min(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
-				float currentMaxCoordY = max(max(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
-				if (currentMinCoordY < minCoordYRight)
-					minCoordYRight = currentMinCoordY;
-				if (currentMaxCoordY < maxCoordYRight)
-					maxCoordYRight = currentMaxCoordY;
-
-				float currentMinCoordZ = min(min(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
-				float currentMaxCoordZ = max(max(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
-				if (currentMinCoordZ < minCoordZRight)
-					minCoordZRight = currentMinCoordZ;
-				if (currentMaxCoordZ < maxCoordZRight)
-					maxCoordZRight = currentMaxCoordZ;
+				minCoordRight = fminf(minCoordLeft, minValues);
+				maxCoordRight = fminf(maxCoordLeft, maxValues);
 			}
+		}
 
-			float currentArea = ((abs(maxCoordXLeft - minCoordXLeft) * abs(maxCoordYLeft - maxCoordYLeft)) * leftPrimitives) + ((abs(maxCoordXRight - minCoordXRight) * abs(maxCoordYRight - maxCoordYRight)) * rightPrimitives);
-			if (currentArea < bestArea)
-			{
-				bestArea = currentArea;
-				bestSplit = split;
-			}
+		float areaLeft = abs(maxCoordLeft.x - minCoordLeft.x) * abs(maxCoordLeft.y - minCoordLeft.y);
+		float areaRight = abs(maxCoordRight.x - minCoordRight.x) * abs(maxCoordRight.y - minCoordRight.y);
+		float currentArea = areaLeft * leftPrimitives + areaRight * rightPrimitives;
+
+		if (currentArea < bestArea)
+		{
+			bestArea = currentArea;
+			bestSplit = currentSplit;
 		}
 	}
 }
