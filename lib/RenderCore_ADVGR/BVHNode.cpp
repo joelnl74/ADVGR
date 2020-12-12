@@ -145,7 +145,7 @@ void BVHNode::Partition(BVHNode* left, BVHNode* right)
 		axis = Axis::Z;
 	}
 
-	for (int i = startLeft; i < startLeft + count; i++) 
+	for (int i = startLeft; i < startLeft + count - 1; i++) 
 	{
 		CoreTri primitive = BVH::primitives[i];
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
