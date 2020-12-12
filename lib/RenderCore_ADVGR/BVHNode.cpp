@@ -67,46 +67,35 @@ void BVHNode::SetupRoot(Mesh& mesh)
 
 	m_IsLeaf = false;
 
-	CalculateBounds();
+	CalculateBounds(primitives);
 	SubDivide();
 }
 
-
-AABB BVHNode::CalculateAxisAlignedBoundingBox(float3 vertex0, float3 vertex1, float3 vertex2)
+AABB BVHNode::CalculateBounds(vector<CoreTri> &triangles)
 {
-	AABB aabb{};
+	float3 minBoxBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
+	float3 maxBoxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
 
-	float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
-	float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
-
-	aabb.minBounds = primMin;
-	aabb.maxBounds = primMax;
-
-	return aabb;
-}
-
-void BVHNode::CalculateBounds()
-{
-	float3 minBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
-	float3 maxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
-
-	int size = primitives.size();
+	int size = triangles.size();
 
 	for (int i = 0; i < size; i++)
 	{
-		float3 vertex0 = primitives[i].vertex0;
-		float3 vertex1 = primitives[i].vertex1;
-		float3 vertex2 = primitives[i].vertex2;
+		float3 vertex0 = triangles[i].vertex0;
+		float3 vertex1 = triangles[i].vertex1;
+		float3 vertex2 = triangles[i].vertex2;
 
 		float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
 		float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
 
-		minBounds = fminf(minBounds, primMin);
-		maxBounds = fmaxf(maxBounds, primMax);
+		minBoxBounds = fminf(minBoxBounds, primMin);
+		maxBoxBounds = fmaxf(maxBoxBounds, primMax);
 	}
 
-	bounds.minBounds = minBounds;
-	bounds.maxBounds = maxBounds;
+	AABB aabb{};
+	aabb.minBounds = minBoxBounds;
+	aabb.maxBounds = maxBoxBounds;
+
+	return aabb;
 }
 
 float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2)
@@ -139,8 +128,8 @@ void BVHNode::SubDivide()
 	m_Left->m_Root = this;
 	m_Right->m_Root = this;
 	
-	m_Left->CalculateBounds();
-	m_Right->CalculateBounds();
+	m_Left->CalculateBounds(m_Left->primitives);
+	m_Right->CalculateBounds(m_Right->primitives);
 
 	m_Left->SubDivide();
 	m_Right->SubDivide();
@@ -173,58 +162,30 @@ void BVHNode::Partition_SAH()
 		float3 leftPrimitives = make_float3(0);
 		float3 rightPrimitives = make_float3(0);
 
+		vector<CoreTri> objectsRight;
+		vector<CoreTri> objectsLeft;
+
 		// Divide the other primitives over the split
 		for (auto& primitive : primitives)
 		{
 			float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 
-
 			if (centroid.x <= split.x)
 			{
 				leftPrimitives.x++;
 
-				minValueLeft = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-				maxValueLeft = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
+				objectsLeft.push_back(primitive);
 			}
 			else
 			{
 				rightPrimitives.x++;
 
-				minValueRight = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-				maxValueRight = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-			}
-			if (centroid.y <= split.y)
-			{
-				leftPrimitives.y++;
-
-				minValueLeft = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-				maxValueLeft = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-			}
-			else
-			{
-				rightPrimitives.y++;
-
-				minValueRight = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-				maxValueRight = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-			}
-			if (centroid.z <= split.z)
-			{
-				leftPrimitives.z++;
-
-				minValueLeft = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-				maxValueLeft = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-			}
-			else
-			{
-				rightPrimitives.z++;
-
-				minValueRight = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-				maxValueRight = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
+				objectsRight.push_back(primitive);
 			}
 		}
 
-		AABB leftBox = CalculateAxisAlignedBoundingBox(split, minValueLeft, maxValueLeft);
-		AABB rightBox = CalculateAxisAlignedBoundingBox(split, minValueRight, maxValueRight);
+		AABB leftBox = CalculateBounds(objectsLeft);
+		AABB rightBox = CalculateBounds(objectsRight);
 
 		float surfaceAreaLeft = CalculateSurfaceArea(leftBox);
 		float surfaceAreaRight = CalculateSurfaceArea(rightBox);
@@ -232,6 +193,18 @@ void BVHNode::Partition_SAH()
 		float3 currentArea = surfaceAreaLeft * leftPrimitives + surfaceAreaRight * rightPrimitives;
 
 		if (currentArea.x < bestArea)
+		{
+			bestArea = currentArea.x;
+			bestSplit = split;
+		}
+
+		if (currentArea.y < bestArea)
+		{
+			bestArea = currentArea.x;
+			bestSplit = split;
+		}
+
+		if (currentArea.z < bestArea)
 		{
 			bestArea = currentArea.x;
 			bestSplit = split;
