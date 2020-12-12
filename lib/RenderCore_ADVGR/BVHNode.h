@@ -13,6 +13,8 @@ public:
 	void SetupRoot(Mesh& mesh);
 	void CalculateBounds();
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
+	AABB CalculateAxisAlignedBoundingBox(float3 vertex0, float3 vertex1, float3 vertex2);
+	float CalculateSurfaceArea(AABB bounds);
 	void SubDivide();
 	void Partition_SAH();
 	void Partition();

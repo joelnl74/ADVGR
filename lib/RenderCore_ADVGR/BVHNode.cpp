@@ -1,9 +1,5 @@
 #include "BVHNode.h"
 
-BVHNode::~BVHNode()
-{
-}
-
 void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 {
 	float3 invD = 1.0f / ray.m_Direction;
@@ -75,6 +71,20 @@ void BVHNode::SetupRoot(Mesh& mesh)
 	SubDivide();
 }
 
+
+AABB BVHNode::CalculateAxisAlignedBoundingBox(float3 vertex0, float3 vertex1, float3 vertex2)
+{
+	AABB aabb{};
+
+	float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
+	float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
+
+	aabb.minBounds = primMin;
+	aabb.maxBounds = primMax;
+
+	return aabb;
+}
+
 void BVHNode::CalculateBounds()
 {
 	float3 minBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
@@ -136,6 +146,13 @@ void BVHNode::SubDivide()
 	m_Right->SubDivide();
 }
 
+
+float BVHNode::CalculateSurfaceArea(AABB bounds) 
+{
+	float3 box = bounds.maxBounds - bounds.minBounds;
+	return (2 * box.x * box.y + 2 * box.y * box.z + 2 * box.z * box.x);
+}
+
 void BVHNode::Partition_SAH()
 {
 	float3 minCoordLeft = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
@@ -143,9 +160,8 @@ void BVHNode::Partition_SAH()
 	float3 minCoordRight = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxCoordRight = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
 
-	float3 bestSplit = make_float3(0);
-	
-	float bestArea = numeric_limits<float>::max();;
+	float3 bestSplit = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
+	float bestArea = numeric_limits<float>::max();
 
 	// Make a split at the centroid of each primitive
 	for (auto& primitive : primitives)
@@ -154,6 +170,7 @@ void BVHNode::Partition_SAH()
 
 		float3 leftPrimitives = make_float3(0);
 		float3 rightPrimitives = make_float3(0);
+
 		// Divide the other primitives over the split
 		for (auto& primitive : primitives)
 		{
@@ -164,50 +181,42 @@ void BVHNode::Partition_SAH()
 			if (centroid.x <= split.x)
 			{
 				leftPrimitives.x++;
-				minCoordLeft = fminf(minCoordLeft, minValues);
-				maxCoordLeft = fminf(maxCoordLeft, maxValues);
 			}
 			else
 			{
 				rightPrimitives.x++;
-				minCoordRight = fminf(minCoordLeft, minValues);
-				maxCoordRight = fminf(maxCoordLeft, maxValues);
 			}
 
 			if (centroid.y <= split.y)
 			{
 				leftPrimitives.y++;
-				minCoordLeft = fminf(minCoordLeft, minValues);
-				maxCoordLeft = fminf(maxCoordLeft, maxValues);
 			}
 			else
 			{
 				rightPrimitives.y++;
-				minCoordRight = fminf(minCoordLeft, minValues);
-				maxCoordRight = fminf(maxCoordLeft, maxValues);
 			}
 
 			if (centroid.z <= split.z)
 			{
 				leftPrimitives.z++;
-				minCoordLeft = fminf(minCoordLeft, minValues);
-				maxCoordLeft = fminf(maxCoordLeft, maxValues);
 			}
 			else
 			{
 				rightPrimitives.z++;
-				minCoordRight = fminf(minCoordLeft, minValues);
-				maxCoordRight = fminf(maxCoordLeft, maxValues);
 			}
 		}
 
-		float areaLeft = abs(maxCoordLeft.x - minCoordLeft.x) * abs(maxCoordLeft.y - minCoordLeft.y);
-		float areaRight = abs(maxCoordRight.x - minCoordRight.x) * abs(maxCoordRight.y - minCoordRight.y);
-		float currentArea = areaLeft * leftPrimitives.x + areaRight * rightPrimitives.x;
+		AABB leftBox = CalculateAxisAlignedBoundingBox();
+		AABB rightBox = CalculateAxisAlignedBoundingBox();
 
-		if (currentArea < bestArea)
+		float surfaceAreaLeft = CalculateSurfaceArea(leftBox);
+		float surfaceAreaRight = CalculateSurfaceArea(rightBox);
+
+		float3 currentArea = surfaceAreaLeft * leftPrimitives + surfaceAreaRight * rightPrimitives;
+
+		if (currentArea.x < bestArea)
 		{
-			bestArea = currentArea;
+			bestArea = currentArea.x;
 			bestSplit = split;
 		}
 	}
