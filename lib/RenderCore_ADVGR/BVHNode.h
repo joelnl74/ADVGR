@@ -8,7 +8,6 @@ using namespace lighthouse2;
 class BVHNode
 {
 public:
-	~BVHNode();
 	void Intersect(Ray& ray, vector<BVHNode>& hitNode);
 	void SetupRoot(Mesh& mesh);
 	void CalculateBounds();
