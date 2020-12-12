@@ -136,6 +136,35 @@ void BVHNode::SubDivide()
 	m_Right->SubDivide();
 }
 
+void BVHNode::Partition_SAH()
+{
+	float minArea = numeric_limits<float>::max();
+	Axis axis;
+
+	for (auto& primitive : primitives)
+	{
+		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
+		float splitAxis = centroid.x;
+
+		uint leftPrimitives = 0;
+		uint rightPrimitives = 0;
+		for (auto& primitive : primitives)
+		{
+			float3 centroid2 = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
+			minArea = 1;
+		}
+
+
+
+
+
+	}
+}
+
+void BVHNode::GetSmallestPositionFromAxis(vector<CoreTri> primitive, Axis axis) {
+
+}
+
 // Split the primitives over left and right child
 void BVHNode::Partition()
 {
@@ -192,6 +221,4 @@ void BVHNode::Partition()
 			return;
 		}
 	}
-
-	
 }

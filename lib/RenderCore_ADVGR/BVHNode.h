@@ -14,6 +14,8 @@ public:
 	void CalculateBounds();
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
 	void SubDivide();
+	void BVHNode::GetSmallestPositionFromAxis(vector<CoreTri> primitive, Axis axis);
+	void Partition_SAH();
 	void Partition();
 
 public:
@@ -23,11 +25,11 @@ public:
 	bool m_IsLeaf;
 	AABB bounds;
 	vector<CoreTri> primitives;
+};
 
 enum class Axis
 {
 	X,
 	Y,
 	Z
-};
 };
