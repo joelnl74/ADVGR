@@ -108,10 +108,6 @@ void BVHNode::SubDivide()
 	// Split up the primitives over left and right child
 	Partition(left, right);
 
-	// Calculate the bounding box of both children
-	left->CalculateBounds();
-	right->CalculateBounds();
-
 	// Continue splitting nodes
 	left->SubDivide();
 	right->SubDivide();
@@ -145,7 +141,7 @@ void BVHNode::Partition(BVHNode* left, BVHNode* right)
 		axis = Axis::Z;
 	}
 
-	for (int i = startLeft; i < startLeft + count - 1; i++) 
+	for (int i = startLeft; i < startLeft + count; i++) 
 	{
 		CoreTri primitive = BVH::primitives[i];
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
@@ -179,11 +175,15 @@ void BVHNode::Partition(BVHNode* left, BVHNode* right)
 	left->startLeft = startLeft;
 	right->startLeft = startLeft + left->count;
 
+	// Calculate the bounding box of both children
+	left->CalculateBounds();
+	right->CalculateBounds();
+
 	// When done splitting the primitives, we set the primitive count of the
 	// current node to 0 so we know it is an interior node.
 	count = 0;
 	// The index of the left child will be saved of this interior node.
-	startLeft = BVH::poolPtr - 1;
+	startLeft = BVH::poolPtr - 2;
 
 	// Note: Not sure what happens when for some reason every primitives ends up 
 	// in the right node. The left node will be considered an interior node in that case...
