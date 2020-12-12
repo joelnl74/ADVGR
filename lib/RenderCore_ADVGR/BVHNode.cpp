@@ -138,31 +138,96 @@ void BVHNode::SubDivide()
 
 void BVHNode::Partition_SAH()
 {
-	float minArea = numeric_limits<float>::max();
+	float minCoordXLeft = numeric_limits<float>::max();
+	float maxCoordXLeft = numeric_limits<float>::min();
+	float minCoordYLeft = numeric_limits<float>::max();
+	float maxCoordYLeft = numeric_limits<float>::min();
+	float minCoordZLeft = numeric_limits<float>::max();
+	float maxCoordZLeft = numeric_limits<float>::min();
+
+	float minCoordXRight = numeric_limits<float>::max();
+	float maxCoordXRight = numeric_limits<float>::min();
+	float minCoordYRight = numeric_limits<float>::max();
+	float maxCoordYRight = numeric_limits<float>::min();
+	float minCoordZRight = numeric_limits<float>::max();
+	float maxCoordZRight = numeric_limits<float>::min();
+
 	Axis axis;
 
+	float bestSplit;
+	float bestArea = numeric_limits<float>::min();;
+
+	// Make a split at each primitive
 	for (auto& primitive : primitives)
 	{
 		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-		float splitAxis = centroid.x;
+		float split = centroid.x;
 
 		uint leftPrimitives = 0;
 		uint rightPrimitives = 0;
+		// Divide the other primitives over these splits
 		for (auto& primitive : primitives)
 		{
 			float3 centroid2 = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-			minArea = 1;
+
+			if (centroid2.x <= split)
+			{
+				leftPrimitives++;
+
+				float currentMinCoordX = min(min(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
+				float currentMaxCoordX = max(max(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
+				if (currentMinCoordX < minCoordXLeft)
+					minCoordXLeft = currentMinCoordX;
+				if (currentMaxCoordX < maxCoordXLeft)
+					maxCoordXLeft = currentMaxCoordX;
+
+				float currentMinCoordY = min(min(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
+				float currentMaxCoordY = max(max(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
+				if (currentMinCoordY < minCoordYLeft)
+					minCoordYLeft = currentMinCoordY;
+				if (currentMaxCoordY < maxCoordYLeft)
+					maxCoordYLeft = currentMaxCoordY;
+
+				float currentMinCoordZ = min(min(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
+				float currentMaxCoordZ = max(max(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
+				if (currentMinCoordZ < minCoordZLeft)
+					minCoordZLeft = currentMinCoordZ;
+				if (currentMaxCoordZ < maxCoordZLeft)
+					maxCoordZLeft = currentMaxCoordZ;
+			}
+			else
+			{
+				rightPrimitives++;
+				float currentMinCoordX = min(min(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
+				float currentMaxCoordX = max(max(primitive.vertex0.x, primitive.vertex1.x), primitive.vertex2.x);
+				if (currentMinCoordX < minCoordXRight)
+					minCoordXRight = currentMinCoordX;
+				if (currentMaxCoordX < maxCoordXRight)
+					maxCoordXRight = currentMaxCoordX;
+
+				float currentMinCoordY = min(min(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
+				float currentMaxCoordY = max(max(primitive.vertex0.y, primitive.vertex1.y), primitive.vertex2.y);
+				if (currentMinCoordY < minCoordYRight)
+					minCoordYRight = currentMinCoordY;
+				if (currentMaxCoordY < maxCoordYRight)
+					maxCoordYRight = currentMaxCoordY;
+
+				float currentMinCoordZ = min(min(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
+				float currentMaxCoordZ = max(max(primitive.vertex0.z, primitive.vertex1.z), primitive.vertex2.z);
+				if (currentMinCoordZ < minCoordZRight)
+					minCoordZRight = currentMinCoordZ;
+				if (currentMaxCoordZ < maxCoordZRight)
+					maxCoordZRight = currentMaxCoordZ;
+			}
+
+			float currentArea = ((abs(maxCoordXLeft - minCoordXLeft) * abs(maxCoordYLeft - maxCoordYLeft)) * leftPrimitives) + ((abs(maxCoordXRight - minCoordXRight) * abs(maxCoordYRight - maxCoordYRight)) * rightPrimitives);
+			if (currentArea < bestArea)
+			{
+				bestArea = currentArea;
+				bestSplit = split;
+			}
 		}
-
-
-
-
-
 	}
-}
-
-void BVHNode::GetSmallestPositionFromAxis(vector<CoreTri> primitive, Axis axis) {
-
 }
 
 // Split the primitives over left and right child
