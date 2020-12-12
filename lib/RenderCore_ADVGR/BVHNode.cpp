@@ -150,15 +150,14 @@ void BVHNode::SubDivide()
 float BVHNode::CalculateSurfaceArea(AABB bounds) 
 {
 	float3 box = bounds.maxBounds - bounds.minBounds;
+
 	return (2 * box.x * box.y + 2 * box.y * box.z + 2 * box.z * box.x);
 }
 
 void BVHNode::Partition_SAH()
 {
-	float3 minCoordLeft = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
-	float3 maxCoordLeft = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
-	float3 minCoordRight = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
-	float3 maxCoordRight = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
+	float3 minValues = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
+	float3 maxValues = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
 
 	float3 bestSplit = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float bestArea = numeric_limits<float>::max();
@@ -175,8 +174,8 @@ void BVHNode::Partition_SAH()
 		for (auto& primitive : primitives)
 		{
 			float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-			float3 minValues = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
-			float3 maxValues = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
+			minValues = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
+			maxValues = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
 
 			if (centroid.x <= split.x)
 			{
@@ -206,8 +205,8 @@ void BVHNode::Partition_SAH()
 			}
 		}
 
-		AABB leftBox = CalculateAxisAlignedBoundingBox();
-		AABB rightBox = CalculateAxisAlignedBoundingBox();
+		AABB leftBox = CalculateAxisAlignedBoundingBox(split, maxValues, minValues);
+		AABB rightBox = CalculateAxisAlignedBoundingBox(split, maxValues, minValues);
 
 		float surfaceAreaLeft = CalculateSurfaceArea(leftBox);
 		float surfaceAreaRight = CalculateSurfaceArea(rightBox);
