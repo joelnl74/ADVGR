@@ -143,35 +143,59 @@ void BVHNode::Partition_SAH()
 	float3 minCoordRight = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxCoordRight = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
 
-	Axis axis;
-
-	float bestSplit;
+	float3 bestSplit = make_float3(0);
+	
 	float bestArea = numeric_limits<float>::max();;
 
 	// Make a split at the centroid of each primitive
 	for (auto& primitive : primitives)
 	{
-		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-		float currentSplit = centroid.x;
+		float3 split = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 
-		uint leftPrimitives = 0;
-		uint rightPrimitives = 0;
+		float3 leftPrimitives = make_float3(0);
+		float3 rightPrimitives = make_float3(0);
 		// Divide the other primitives over the split
 		for (auto& primitive : primitives)
 		{
-			float3 centroid2 = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
+			float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 			float3 minValues = fminf(fminf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
 			float3 maxValues = fmaxf(fmaxf(primitive.vertex0, primitive.vertex1), primitive.vertex2);
 
-			if (centroid2.x <= currentSplit)
+			if (centroid.x <= split.x)
 			{
-				leftPrimitives++;
+				leftPrimitives.x++;
 				minCoordLeft = fminf(minCoordLeft, minValues);
 				maxCoordLeft = fminf(maxCoordLeft, maxValues);
 			}
 			else
 			{
-				rightPrimitives++;
+				rightPrimitives.x++;
+				minCoordRight = fminf(minCoordLeft, minValues);
+				maxCoordRight = fminf(maxCoordLeft, maxValues);
+			}
+
+			if (centroid.y <= split.y)
+			{
+				leftPrimitives.y++;
+				minCoordLeft = fminf(minCoordLeft, minValues);
+				maxCoordLeft = fminf(maxCoordLeft, maxValues);
+			}
+			else
+			{
+				rightPrimitives.y++;
+				minCoordRight = fminf(minCoordLeft, minValues);
+				maxCoordRight = fminf(maxCoordLeft, maxValues);
+			}
+
+			if (centroid.z <= split.z)
+			{
+				leftPrimitives.z++;
+				minCoordLeft = fminf(minCoordLeft, minValues);
+				maxCoordLeft = fminf(maxCoordLeft, maxValues);
+			}
+			else
+			{
+				rightPrimitives.z++;
 				minCoordRight = fminf(minCoordLeft, minValues);
 				maxCoordRight = fminf(maxCoordLeft, maxValues);
 			}
@@ -179,12 +203,12 @@ void BVHNode::Partition_SAH()
 
 		float areaLeft = abs(maxCoordLeft.x - minCoordLeft.x) * abs(maxCoordLeft.y - minCoordLeft.y);
 		float areaRight = abs(maxCoordRight.x - minCoordRight.x) * abs(maxCoordRight.y - minCoordRight.y);
-		float currentArea = areaLeft * leftPrimitives + areaRight * rightPrimitives;
+		float currentArea = areaLeft * leftPrimitives.x + areaRight * rightPrimitives.x;
 
 		if (currentArea < bestArea)
 		{
 			bestArea = currentArea;
-			bestSplit = currentSplit;
+			bestSplit = split;
 		}
 	}
 }
