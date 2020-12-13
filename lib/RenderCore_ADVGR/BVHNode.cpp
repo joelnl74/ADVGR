@@ -187,7 +187,7 @@ void BVHNode::Partition_SAH()
 
 				objectsRightY.push_back(primitive);
 			}
-			if (centroid.x <= split.x)
+			if (centroid.z <= split.z)
 			{
 				leftPrimitives.z++;
 
