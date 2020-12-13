@@ -46,13 +46,13 @@ void PrepareScene()
 	}
 	else
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/cubes.obj", 0.05);
+		sceneMesh = renderer->AddMesh("../_shareddata/cubes.obj", 1);
 	}
 
 	renderer->AddInstance(sceneMesh);
 	renderer->AddPointLight(make_float3(0, 20, 0), 50 * make_float3(10, 10, 10));
 	
-	renderer->GetCamera()->TranslateRelative(make_float3(0, 2.5, -15));
+	renderer->GetCamera()->TranslateRelative(make_float3(0, 2.5, -20));
 	//renderer->GetCamera()->SetMatrix(renderer->GetCamera()->GetMatrix() * mat4::RotateX(0.25));
 	renderer->GetCamera()->Changed();
 

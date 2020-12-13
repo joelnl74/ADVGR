@@ -67,7 +67,7 @@ void BVHNode::SetupRoot(Mesh& mesh)
 
 	m_IsLeaf = false;
 
-	CalculateBounds(primitives);
+	bounds = CalculateBounds(primitives);
 	SubDivide();
 }
 
@@ -109,13 +109,13 @@ void BVHNode::SubDivide()
 
 	if (m_Left != NULL)
 	{
-		m_Left->CalculateBounds(m_Left->primitives);
+		m_Left->bounds = CalculateBounds(m_Left->primitives);
 		m_Left->SubDivide();
 	}
 
 	if (m_Right != NULL)
 	{
-		m_Right->CalculateBounds(m_Right->primitives);
+		m_Right->bounds = CalculateBounds(m_Right->primitives);
 		m_Right->SubDivide();
 	}
 }
@@ -146,9 +146,6 @@ void BVHNode::Partition_SAH()
 		vector<CoreTri> objectsRight;
 		vector<CoreTri> objectsLeft;
 
-		objectsRight.clear();
-		objectsLeft.clear();
-
 		// Divide the other primitives over the split
 		for (auto& primitive : primitives)
 		{
@@ -176,7 +173,7 @@ void BVHNode::Partition_SAH()
 
 		float currentArea = surfaceAreaLeft * leftPrimitives.x + surfaceAreaRight * rightPrimitives.x;
 
-		if (currentArea < bestArea)
+		if (currentArea < bestArea && isnan(currentArea) == false)
 		{
 			bestObjectsRight = objectsRight;
 			bestObjectsLeft = objectsLeft;
