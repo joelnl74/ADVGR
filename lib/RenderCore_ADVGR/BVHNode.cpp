@@ -112,11 +112,19 @@ void BVHNode::SubDivide()
 		m_Left->bounds = CalculateBounds(m_Left->primitives);
 		m_Left->SubDivide();
 	}
+	else
+	{
+		m_Root->m_Left->m_IsLeaf = true;
+	}
 
 	if (m_Right != NULL)
 	{
 		m_Right->bounds = CalculateBounds(m_Right->primitives);
 		m_Right->SubDivide();
+	}
+	else
+	{
+		m_Root->m_Right->m_IsLeaf = true;
 	}
 }
 
@@ -184,7 +192,6 @@ void BVHNode::Partition_SAH()
 
 	if (m_Root != NULL && bestArea >= m_Root->partitionScore)
 	{
-		m_IsLeaf = true;
 	}
 	else
 	{
