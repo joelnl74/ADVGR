@@ -24,6 +24,7 @@ public:
 	bool m_IsLeaf;
 	AABB bounds;
 	vector<CoreTri> primitives;
+	float partitionScore;
 };
 
 enum Axis

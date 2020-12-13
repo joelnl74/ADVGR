@@ -104,35 +104,20 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 }
 
 void BVHNode::SubDivide()
-{	
-	// TODO: Change 10 into a variable
-	// Termination criterion
-	if (primitives.size() < 2)
-	{
-		m_Root->m_Left->m_IsLeaf = true;
-		m_Root->m_Right->m_IsLeaf = true;
-
-		return;
-	}
-
-	m_Left = new BVHNode();
-	m_Right = new BVHNode();
-
+{		
 	Partition_SAH();
 
-	// Check whether the primitives were split. If not, that means it can not be split any further, thus return
-	if (m_Root != NULL && primitives.size() == m_Root->primitives.size()) {
-		return;
+	if (m_Left != NULL)
+	{
+		m_Left->CalculateBounds(m_Left->primitives);
+		m_Left->SubDivide();
 	}
-	
-	m_Left->m_Root = this;
-	m_Right->m_Root = this;
-	
-	m_Left->CalculateBounds(m_Left->primitives);
-	m_Right->CalculateBounds(m_Right->primitives);
 
-	m_Left->SubDivide();
-	m_Right->SubDivide();
+	if (m_Right != NULL)
+	{
+		m_Right->CalculateBounds(m_Right->primitives);
+		m_Right->SubDivide();
+	}
 }
 
 
@@ -145,14 +130,10 @@ float BVHNode::CalculateSurfaceArea(AABB bounds)
 
 void BVHNode::Partition_SAH()
 {
-	float3 minValueLeft = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
-	float3 maxValueLeft = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
-
-	float3 minValueRight = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
-	float3 maxValueRight = make_float3(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
-
-	float3 bestSplit = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float bestArea = numeric_limits<float>::max();
+
+	vector<CoreTri> bestObjectsRight;
+	vector<CoreTri> bestObjectsLeft;
 
 	// Make a split at the centroid of each primitive
 	for (auto& primitive : primitives)
@@ -164,6 +145,9 @@ void BVHNode::Partition_SAH()
 
 		vector<CoreTri> objectsRight;
 		vector<CoreTri> objectsLeft;
+
+		objectsRight.clear();
+		objectsLeft.clear();
 
 		// Divide the other primitives over the split
 		for (auto& primitive : primitives)
@@ -190,25 +174,31 @@ void BVHNode::Partition_SAH()
 		float surfaceAreaLeft = CalculateSurfaceArea(leftBox);
 		float surfaceAreaRight = CalculateSurfaceArea(rightBox);
 
-		float3 currentArea = surfaceAreaLeft * leftPrimitives + surfaceAreaRight * rightPrimitives;
+		float currentArea = surfaceAreaLeft * leftPrimitives.x + surfaceAreaRight * rightPrimitives.x;
 
-		if (currentArea.x < bestArea)
+		if (currentArea < bestArea)
 		{
-			bestArea = currentArea.x;
-			bestSplit = split;
+			bestObjectsRight = objectsRight;
+			bestObjectsLeft = objectsLeft;
+			bestArea = currentArea;
+			partitionScore = bestArea;
 		}
+	}
 
-		if (currentArea.y < bestArea)
-		{
-			bestArea = currentArea.x;
-			bestSplit = split;
-		}
+	if (m_Root != NULL && bestArea >= m_Root->partitionScore)
+	{
+		m_IsLeaf = true;
+	}
+	else
+	{
+		m_Left = new BVHNode();
+		m_Right = new BVHNode();
 
-		if (currentArea.z < bestArea)
-		{
-			bestArea = currentArea.x;
-			bestSplit = split;
-		}
+		m_Left->m_Root = this;
+		m_Right->m_Root = this;
+
+		m_Left->primitives = bestObjectsLeft;
+		m_Right->primitives = bestObjectsRight;
 	}
 }
 
