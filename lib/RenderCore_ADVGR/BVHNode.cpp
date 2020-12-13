@@ -205,27 +205,13 @@ void BVHNode::Partition_SAH()
 			}
 		}
 
-		AABB leftBoxX = CalculateBounds(objectsLeftX);
-		AABB rightBoxX = CalculateBounds(objectsRightX);
-
-		float surfaceAreaLeftX = CalculateSurfaceArea(leftBoxX);
-		float surfaceAreaRightX = CalculateSurfaceArea(rightBoxX);
-
-		AABB leftBoxY = CalculateBounds(objectsLeftY);
-		AABB rightBoxY = CalculateBounds(objectsRightY);
-
-		float surfaceAreaLeftY = CalculateSurfaceArea(leftBoxY);
-		float surfaceAreaRightY = CalculateSurfaceArea(rightBoxY);
-
-		AABB leftBoxZ = CalculateBounds(objectsLeftZ);
-		AABB rightBoxZ = CalculateBounds(objectsRightZ);
-
-		float surfaceAreaLeftZ = CalculateSurfaceArea(leftBoxZ);
-		float surfaceAreaRightZ = CalculateSurfaceArea(rightBoxZ);
-
-		float currentAreaX = surfaceAreaLeftX * leftPrimitives.x + surfaceAreaRightX * rightPrimitives.x;
-		float currentAreaY = surfaceAreaLeftY * leftPrimitives.y + surfaceAreaRightY * rightPrimitives.y;
-		float currentAreaZ = surfaceAreaLeftZ * leftPrimitives.z + surfaceAreaRightZ * rightPrimitives.z;
+		// Calculate the surface area with the current made splits over all axes.
+		float currentAreaX = CalculateSurfaceArea(CalculateBounds(objectsLeftX)) * leftPrimitives.x + 
+			CalculateSurfaceArea(CalculateBounds(objectsRightX)) * rightPrimitives.x;
+		float currentAreaY = CalculateSurfaceArea(CalculateBounds(objectsLeftY)) * leftPrimitives.y + 
+			CalculateSurfaceArea(CalculateBounds(objectsRightY)) * rightPrimitives.y;
+		float currentAreaZ = CalculateSurfaceArea(CalculateBounds(objectsLeftZ)) * leftPrimitives.z + 
+			CalculateSurfaceArea(CalculateBounds(objectsRightZ)) * rightPrimitives.z;
 
 		if (currentAreaX < bestArea && isnan(currentAreaX) == false)
 		{
@@ -250,11 +236,9 @@ void BVHNode::Partition_SAH()
 		}
 	}
 
-	if (m_Root != NULL && bestArea >= m_Root->partitionScore)
-	{
-	}
-	else
-	{
+	// Make children if this is the root node.
+	// Or make children when the current partitionScore is better than parent node.
+	if (m_Root == NULL || bestArea <= m_Root->partitionScore) {
 		m_Left = new BVHNode();
 		m_Right = new BVHNode();
 
