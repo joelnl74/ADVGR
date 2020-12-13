@@ -151,8 +151,12 @@ void BVHNode::Partition_SAH()
 		float3 leftPrimitives = make_float3(0);
 		float3 rightPrimitives = make_float3(0);
 
-		vector<CoreTri> objectsRight;
-		vector<CoreTri> objectsLeft;
+		vector<CoreTri> objectsRightX;
+		vector<CoreTri> objectsLeftX;
+		vector<CoreTri> objectsRightY;
+		vector<CoreTri> objectsLeftY;
+		vector<CoreTri> objectsRightZ;
+		vector<CoreTri> objectsLeftZ;
 
 		// Divide the other primitives over the split
 		for (auto& primitive : primitives)
@@ -163,29 +167,81 @@ void BVHNode::Partition_SAH()
 			{
 				leftPrimitives.x++;
 
-				objectsLeft.push_back(primitive);
+				objectsLeftX.push_back(primitive);
 			}
 			else
 			{
 				rightPrimitives.x++;
 
-				objectsRight.push_back(primitive);
+				objectsRightX.push_back(primitive);
+			}
+			if (centroid.y <= split.y)
+			{
+				leftPrimitives.y++;
+
+				objectsLeftY.push_back(primitive);
+			}
+			else
+			{
+				rightPrimitives.y++;
+
+				objectsRightY.push_back(primitive);
+			}
+			if (centroid.x <= split.x)
+			{
+				leftPrimitives.z++;
+
+				objectsLeftZ.push_back(primitive);
+			}
+			else
+			{
+				rightPrimitives.z++;
+
+				objectsRightZ.push_back(primitive);
 			}
 		}
 
-		AABB leftBox = CalculateBounds(objectsLeft);
-		AABB rightBox = CalculateBounds(objectsRight);
+		AABB leftBoxX = CalculateBounds(objectsLeftX);
+		AABB rightBoxX = CalculateBounds(objectsRightX);
 
-		float surfaceAreaLeft = CalculateSurfaceArea(leftBox);
-		float surfaceAreaRight = CalculateSurfaceArea(rightBox);
+		float surfaceAreaLeftX = CalculateSurfaceArea(leftBoxX);
+		float surfaceAreaRightX = CalculateSurfaceArea(rightBoxX);
 
-		float currentArea = surfaceAreaLeft * leftPrimitives.x + surfaceAreaRight * rightPrimitives.x;
+		AABB leftBoxY = CalculateBounds(objectsLeftY);
+		AABB rightBoxY = CalculateBounds(objectsRightY);
 
-		if (currentArea < bestArea && isnan(currentArea) == false)
+		float surfaceAreaLeftY = CalculateSurfaceArea(leftBoxY);
+		float surfaceAreaRightY = CalculateSurfaceArea(rightBoxY);
+
+		AABB leftBoxZ = CalculateBounds(objectsLeftZ);
+		AABB rightBoxZ = CalculateBounds(objectsRightZ);
+
+		float surfaceAreaLeftZ = CalculateSurfaceArea(leftBoxZ);
+		float surfaceAreaRightZ = CalculateSurfaceArea(rightBoxZ);
+
+		float currentAreaX = surfaceAreaLeftX * leftPrimitives.x + surfaceAreaRightX * rightPrimitives.x;
+		float currentAreaY = surfaceAreaLeftY * leftPrimitives.y + surfaceAreaRightY * rightPrimitives.y;
+		float currentAreaZ = surfaceAreaLeftZ * leftPrimitives.z + surfaceAreaRightZ * rightPrimitives.z;
+
+		if (currentAreaX < bestArea && isnan(currentAreaX) == false)
 		{
-			bestObjectsRight = objectsRight;
-			bestObjectsLeft = objectsLeft;
-			bestArea = currentArea;
+			bestObjectsRight = objectsRightX;
+			bestObjectsLeft = objectsLeftX;
+			bestArea = currentAreaX;
+			partitionScore = bestArea;
+		}
+		if (currentAreaY < bestArea && isnan(currentAreaY) == false)
+		{
+			bestObjectsRight = objectsRightY;
+			bestObjectsLeft = objectsLeftY;
+			bestArea = currentAreaY;
+			partitionScore = bestArea;
+		}
+		if (currentAreaZ < bestArea && isnan(currentAreaZ) == false)
+		{
+			bestObjectsRight = objectsRightZ;
+			bestObjectsLeft = objectsLeftZ;
+			bestArea = currentAreaZ;
 			partitionScore = bestArea;
 		}
 	}
