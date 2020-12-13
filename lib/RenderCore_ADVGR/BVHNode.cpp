@@ -132,22 +132,26 @@ void BVHNode::SubDivide()
 float BVHNode::CalculateSurfaceArea(AABB bounds) 
 {
 	float3 box = bounds.maxBounds - bounds.minBounds;
-
 	return (2 * box.x * box.y + 2 * box.y * box.z + 2 * box.z * box.x);
 }
 
 void BVHNode::Partition_SAH()
 {
+	// Current best area (lowest surface area).
 	float bestArea = numeric_limits<float>::max();
 
-	vector<CoreTri> bestObjectsRight;
+	// The primitives that give the best area.
 	vector<CoreTri> bestObjectsLeft;
+	vector<CoreTri> bestObjectsRight;
 
-	// Make a split at the centroid of each primitive
+	// Here we consider the centroid of each primitive as potential split.
 	for (auto& primitive : primitives)
 	{
+		// Potential split.
 		float3 split = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 
+		// Keep track of the number of primitives divided over left and right
+		// for the current split over three axes.
 		float3 leftPrimitives = make_float3(0);
 		float3 rightPrimitives = make_float3(0);
 
