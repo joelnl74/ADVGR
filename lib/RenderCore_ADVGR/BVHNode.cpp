@@ -124,14 +124,18 @@ void BVHNode::Partition_SAH()
 	int bestCountLeft = 0;
 	int bestCountRight = 0;
 
-	auto& root = BVH::pool[BVH::poolPtr - 1];
+	float rootSurfaceArea = 0.0f;
 
-	float rootSurfaceArea = CalculateSurfaceArea(root->bounds) * root->count;
-
-	if (BVH::poolPtr - 1 > 0)
+	if (BVH::poolPtr - 1 == 0)
 	{
+		float rootSurfaceArea = CalculateSurfaceArea(BVH::pool[BVH::poolPtr - 1]->bounds) * BVH::primitives.size();
+	}
+	else
+	{
+		auto& root = BVH::pool[BVH::poolPtr - 2];
+
 		// Sueface area of the parent
-		float surfaceAreaLeft = CalculateSurfaceArea(CalculateBounds(root->startLeft, root->count - root->startLeft));
+		float surfaceAreaLeft = CalculateSurfaceArea(CalculateBounds(root->startLeft, root->count));
 		float surfaceAreaRight = CalculateSurfaceArea(CalculateBounds(root->startLeft + root->count, BVH::primitives.size() - root->count));
 
 		rootSurfaceArea = surfaceAreaLeft * root->count + surfaceAreaRight * BVH::primitives.size() - root->count;
@@ -257,16 +261,17 @@ void BVHNode::Partition_SAH()
 	{
 		auto left = BVH::pool[BVH::poolPtr++];
 		left->bounds = CalculateBounds(bestObjectsLeft, bestCountLeft);
-		left->startLeft = startLeft;
+		left->startLeft = bestObjectsLeft;
 		left->count = bestCountLeft;
 
 		auto right = BVH::pool[BVH::poolPtr++];
 		right->bounds = CalculateBounds(bestObjectsRight, bestCountRight);
-		right->startLeft = bestCountRight;
+		right->startLeft = bestObjectsRight;
+		right->count = bestCountRight;
 
 		startLeft = BVH::poolPtr - 2;
 
-		left->SubDivide();
-		right->SubDivide();
+		left->Partition_SAH();
+		right->Partition_SAH();
 	}
 }
