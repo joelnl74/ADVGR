@@ -103,7 +103,7 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 
 void BVHNode::SubDivide()
 {		
-	Partition_SAH();
+	Partition_SAH(numeric_limits<float>::max());
 }
 
 float BVHNode::CalculateSurfaceArea(AABB bounds) 
@@ -112,10 +112,10 @@ float BVHNode::CalculateSurfaceArea(AABB bounds)
 	return (2 * box.x * box.y + 2 * box.y * box.z + 2 * box.z * box.x);
 }
 
-void BVHNode::Partition_SAH()
+void BVHNode::Partition_SAH(float rootSurfaceArea)
 {
 	// Current best area (lowest surface area).
-	float bestArea = numeric_limits<float>::max();
+	float bestArea = rootSurfaceArea;
 
 	// The primitives that give the best area.
 	int bestObjectsLeft = -1;
@@ -123,23 +123,6 @@ void BVHNode::Partition_SAH()
 
 	int bestCountLeft = 0;
 	int bestCountRight = 0;
-
-	float rootSurfaceArea = 0.0f;
-
-	if (BVH::poolPtr - 1 == 0)
-	{
-		float rootSurfaceArea = CalculateSurfaceArea(BVH::pool[BVH::poolPtr - 1]->bounds) * BVH::primitives.size();
-	}
-	else
-	{
-		auto& root = BVH::pool[BVH::poolPtr - 2];
-
-		// Sueface area of the parent
-		float surfaceAreaLeft = CalculateSurfaceArea(CalculateBounds(root->startLeft, root->count));
-		float surfaceAreaRight = CalculateSurfaceArea(CalculateBounds(root->startLeft + root->count, BVH::primitives.size() - root->count));
-
-		rootSurfaceArea = surfaceAreaLeft * root->count + surfaceAreaRight * BVH::primitives.size() - root->count;
-	}
 
 
 	// Here we consider the centroid of each primitive as potential split.
@@ -161,9 +144,9 @@ void BVHNode::Partition_SAH()
 		int objectsLeftZ = -1;
 
 		// Divide the other primitives over the split
-		for (auto& index : BVH::indices)
+		for (int index = startLeft; index < startLeft + count; index++)
 		{
-			auto& primitive = BVH::primitives[index];
+			auto& primitive = BVH::primitives[BVH::indices[index]];
 			float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 
 			if (centroid.x <= split.x)
@@ -257,7 +240,7 @@ void BVHNode::Partition_SAH()
 		}
 	}
 
-	if (bestArea <= rootSurfaceArea)
+	if (bestArea < rootSurfaceArea)
 	{
 		auto left = BVH::pool[BVH::poolPtr++];
 		left->bounds = CalculateBounds(bestObjectsLeft, bestCountLeft);
@@ -271,7 +254,7 @@ void BVHNode::Partition_SAH()
 
 		startLeft = BVH::poolPtr - 2;
 
-		left->Partition_SAH();
-		right->Partition_SAH();
+		left->Partition_SAH(bestArea);
+		right->Partition_SAH(bestArea);
 	}
 }
