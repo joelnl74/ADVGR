@@ -78,9 +78,9 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 	// The centroid of every bounding box of a triangle.
 	vector<float3> c;
 	// The bounding box of a voxel/whole mesh.
-	AABB vb{ make_float3(INT_MAX) , INT_MIN };
+	AABB vb{ make_float3(INT_MAX) , make_float3(INT_MIN) };
 	// The bounding box for all centroids.
-	AABB cb{ make_float3(numeric_limits<float>::max()) , make_float3(numeric_limits<float>::min()) };
+	AABB cb{ make_float3(INT_MAX) , make_float3(INT_MIN) };
 
 	for (int i = 0; i < mesh.vcount / 3; i++)
 	{
@@ -115,7 +115,7 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 	float minCentroid;
 
 	// Number of bins.
-	uint K = 8;
+	constexpr uint K = 8;
 	// Bin distance.
 	float k;
 
@@ -146,10 +146,33 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 		
 		binID.push_back(id);
 	}
+
+	int numberOfTrianglesInBin[K] = { 0 };
+	for (uint i = 0; i < primitives.size(); i++)
+		numberOfTrianglesInBin[binID[i]]++;
 	
 	// plane[0] will have bin[0] on the left and bin[1] to the right.
-	const int number_of_planes = K - 1;
+	constexpr int number_of_planes = K - 1;
 	int numberOfTrianglesToTheLeft[number_of_planes];
+	float surfaceAreaOfBoxToTheLeft[number_of_planes];
+	int numberOfTrianglesToTheRight[number_of_planes];
+	float surfaceAreaOfBoxToTheRight[number_of_planes];
+
+	uint numberOfTrianglesLeft = 0;
+	AABB bbLeft;
+	//for (int j = 0; j < number_of_planes; j++)
+	//{
+	//	numberOfTrianglesLeft += numberOfTrianglesInBin[j];
+	//	numberOfTrianglesToTheLeft[j] = numberOfTrianglesLeft;
+
+	//	bboxToTheLeft.expand(bboxOfBin[j]);
+	//	//ATTENTION! If bbox is empty, SA should be 0
+	//	if (bboxToTheLeft.empty())
+	//		surfaceAreaOfBBoxToTheLeft[j] = 0;
+	//	else
+	//		surfaceAreaOfBBoxToTheLeft[j] = bboxToTheLeft.surface_area();
+	//}
+
 
 
 	m_IsLeaf = false;
