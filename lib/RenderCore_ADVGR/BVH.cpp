@@ -41,14 +41,14 @@ void BVH::ConstructBVH(Mesh& mesh)
 	root = pool[0];
 	// We skip a node here so that chances are higher that the 
 	// left and right child node are in the same cache line
-	poolPtr = 2;
+	poolPtr = 1;
 
 	// The root node has all the primitives in the scene, starting from 0
 	root->startLeft = 0;
 	root->count = N;
 
 	// Create a bounding box for the root node
-	root->CalculateBounds();
+	root->bounds = root->CalculateBounds(0, N);
 	root->SubDivide();
 }
 

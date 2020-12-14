@@ -73,7 +73,7 @@ AABB BVHNode::CalculateBounds(int start, int amout)
 	float3 minBoxBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxBoxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
 
-	for (int i = 0; i < start + amout; i++)
+	for (int i = start; i < start + amout; i++)
 	{
 		int index = BVH::indices[i];
 		CoreTri primitive = BVH::primitives[index];
@@ -84,6 +84,9 @@ AABB BVHNode::CalculateBounds(int start, int amout)
 
 		float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
 		float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
+
+		minBoxBounds = fminf(minBoxBounds, primMin);
+		maxBoxBounds = fmaxf(maxBoxBounds, primMax);
 	}
 
 	AABB aabb{};
@@ -115,11 +118,15 @@ void BVHNode::Partition_SAH()
 	float bestArea = numeric_limits<float>::max();
 
 	// The primitives that give the best area.
-	int bestObjectsLeft;
-	int bestObjectsRight;
+	int bestObjectsLeft = -1;
+	int bestObjectsRight = -1;
 
 	int bestCountLeft = 0;
 	int bestCountRight = 0;
+
+	// Sueface area of the parent
+	int rootPointer = BVH::poolPtr - 1;
+	float rootSurfaceArea = CalculateSurfaceArea(BVH::pool[rootPointer]->bounds);
 
 	// Here we consider the centroid of each primitive as potential split.
 	for (auto& primitive : BVH::primitives)
@@ -149,41 +156,41 @@ void BVHNode::Partition_SAH()
 			{
 				leftPrimitives.x++;
 
-				if(objectsLeftX != -1)
+				if(objectsLeftX == -1)
 					objectsLeftX = index;
 			}
 			else
 			{
 				rightPrimitives.x++;
-				if (objectsRightX != -1)
+				if (objectsRightX == -1)
 					objectsRightX = index;
 			}
 			if (centroid.y <= split.y)
 			{
 				leftPrimitives.y++;
 
-				if (objectsLeftY != -1)
+				if (objectsLeftY == -1)
 					objectsLeftY = index;
 			}
 			else
 			{
 				rightPrimitives.y++;
 
-				if (objectsLeftY != -1)
-					objectsLeftY = index;;
+				if (objectsRightY == -1)
+					objectsRightY = index;;
 			}
 			if (centroid.z <= split.z)
 			{
 				leftPrimitives.z++;
 
-				if (objectsLeftZ != -1)
+				if (objectsLeftZ == -1)
 					objectsLeftZ = index;;
 			}
 			else
 			{
 				rightPrimitives.z++;
 
-				if (objectsRightZ != -1)
+				if (objectsRightZ == -1)
 					objectsRightZ = index;;
 			}
 		}
@@ -236,25 +243,21 @@ void BVHNode::Partition_SAH()
 		}
 	}
 
-	if (bestArea >= m_Root->partitionScore)
+	if (bestArea <= rootSurfaceArea)
 	{
-	}
-	else
-	{
-		auto left = BVH::pool[BVH::poolPtr];
-		auto right = BVH::pool[BVH::poolPtr];
-
+		auto left = BVH::pool[BVH::poolPtr++];
 		left->bounds = CalculateBounds(bestObjectsLeft, bestCountLeft);
 		left->SubDivide();
 
+		left->startLeft = startLeft;
+
+		auto right = BVH::pool[BVH::poolPtr++];
 		right->bounds = CalculateBounds(bestObjectsRight, bestCountRight);
 		right->SubDivide();
 
-		left->startLeft = startLeft;
 		right->startLeft = startLeft + left->count;
 
 		startLeft = BVH::poolPtr - 2;
-
 		count = 0;
 	}
 }
