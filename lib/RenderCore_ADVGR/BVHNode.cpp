@@ -58,20 +58,82 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 	}
 }
 
-void BVHNode::SetupRoot(Mesh& mesh)
+//void BVHNode::ConstructBVH(Mesh& mesh)
+//{
+//	for (int i = 0; i < mesh.vcount / 3; i++)
+//	{
+//		primitives.push_back(mesh.triangles[i]);
+//	}
+//
+//	m_IsLeaf = false;
+//
+//	bounds = CalculateVoxelBounds(primitives);
+//	SubDivide();
+//}
+
+void BVHNode::ConstructBVH(Mesh& mesh)
 {
+	// The bounding box of every single triangle in the mesh.
+	vector<AABB> tb;
+	// The centroid of every bounding box of a triangle.
+	vector<float3> c;
+	// The bounding box of a voxel/whole mesh.
+	AABB vb{ make_float3(numeric_limits<float>::max()) , make_float3(numeric_limits<float>::min()) };
+	// The bounding box for all centroids.
+	AABB cb{ make_float3(numeric_limits<float>::max()) , make_float3(numeric_limits<float>::min()) };
+
 	for (int i = 0; i < mesh.vcount / 3; i++)
 	{
+		// Save primitive to this node.
 		primitives.push_back(mesh.triangles[i]);
+		// Calculate bounding box of current primitive.
+		AABB bb = CalculateTriangleBounds(primitives[i]);
+		// Save bounding box of this primitive.
+		tb.push_back(bb);
+		// Save the centroid of this bounding box.
+		c.push_back(CalculateBoundingBoxCenter(bb));
+		// Check whether the bounds of this primitive are min/max of voxel.
+		vb.minBounds = fminf(bb.minBounds, vb.minBounds);
+		vb.maxBounds = fmaxf(bb.maxBounds, vb.maxBounds);
+		// Do the same for every centroid.
+		cb.minBounds = fminf(bb.minBounds, cb.minBounds);
+		cb.maxBounds = fmaxf(bb.maxBounds, cb.maxBounds);
 	}
 
 	m_IsLeaf = false;
-
-	bounds = CalculateBounds(primitives);
 	SubDivide();
 }
 
-AABB BVHNode::CalculateBounds(vector<CoreTri> &triangles)
+float3 BVHNode::CalculateBoundingBoxCenter(AABB boundingBox) {
+	float centerX = boundingBox.minBounds.x + ((boundingBox.maxBounds.x - boundingBox.minBounds.x) / 2);
+	float centerY = boundingBox.minBounds.y + ((boundingBox.maxBounds.y - boundingBox.minBounds.y) / 2);
+	float centerZ = boundingBox.minBounds.z + ((boundingBox.maxBounds.z - boundingBox.minBounds.z) / 2);
+	return make_float3(centerX, centerY, centerZ);
+}
+
+AABB BVHNode::CalculateTriangleBounds(CoreTri& triangle)
+{
+	float3 minBoxBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
+	float3 maxBoxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
+
+	float3 vertex0 = triangle.vertex0;
+	float3 vertex1 = triangle.vertex1;
+	float3 vertex2 = triangle.vertex2;
+
+	float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
+	float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
+
+	minBoxBounds = fminf(minBoxBounds, primMin);
+	maxBoxBounds = fmaxf(maxBoxBounds, primMax);
+
+	AABB aabb{};
+	aabb.minBounds = minBoxBounds;
+	aabb.maxBounds = maxBoxBounds;
+
+	return aabb;
+}
+
+AABB BVHNode::CalculateVoxelBounds(vector<CoreTri> &triangles)
 {
 	float3 minBoxBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxBoxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
@@ -109,7 +171,7 @@ void BVHNode::SubDivide()
 
 	if (m_Left != NULL)
 	{
-		m_Left->bounds = CalculateBounds(m_Left->primitives);
+		m_Left->bounds = CalculateVoxelBounds(m_Left->primitives);
 		m_Left->SubDivide();
 	}
 	else
@@ -119,7 +181,7 @@ void BVHNode::SubDivide()
 
 	if (m_Right != NULL)
 	{
-		m_Right->bounds = CalculateBounds(m_Right->primitives);
+		m_Right->bounds = CalculateVoxelBounds(m_Right->primitives);
 		m_Right->SubDivide();
 	}
 	else
@@ -206,12 +268,12 @@ void BVHNode::Partition_SAH()
 		}
 
 		// Calculate the surface area with the current made splits over all axes.
-		float currentAreaX = CalculateSurfaceArea(CalculateBounds(objectsLeftX)) * leftPrimitives.x + 
-			CalculateSurfaceArea(CalculateBounds(objectsRightX)) * rightPrimitives.x;
-		float currentAreaY = CalculateSurfaceArea(CalculateBounds(objectsLeftY)) * leftPrimitives.y + 
-			CalculateSurfaceArea(CalculateBounds(objectsRightY)) * rightPrimitives.y;
-		float currentAreaZ = CalculateSurfaceArea(CalculateBounds(objectsLeftZ)) * leftPrimitives.z + 
-			CalculateSurfaceArea(CalculateBounds(objectsRightZ)) * rightPrimitives.z;
+		float currentAreaX = CalculateSurfaceArea(CalculateVoxelBounds(objectsLeftX)) * leftPrimitives.x + 
+			CalculateSurfaceArea(CalculateVoxelBounds(objectsRightX)) * rightPrimitives.x;
+		float currentAreaY = CalculateSurfaceArea(CalculateVoxelBounds(objectsLeftY)) * leftPrimitives.y + 
+			CalculateSurfaceArea(CalculateVoxelBounds(objectsRightY)) * rightPrimitives.y;
+		float currentAreaZ = CalculateSurfaceArea(CalculateVoxelBounds(objectsLeftZ)) * leftPrimitives.z + 
+			CalculateSurfaceArea(CalculateVoxelBounds(objectsRightZ)) * rightPrimitives.z;
 
 		if (currentAreaX < bestArea && isnan(currentAreaX) == false)
 		{

@@ -57,7 +57,8 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	meshes.push_back(newMesh);
 
 	root = new BVHNode();
-	root->SetupRoot(newMesh);
+	root->ConstructBVH(newMesh);
+	//root->SetupRoot(newMesh);
 }
 
 //  +-----------------------------------------------------------------------------+
