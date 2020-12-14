@@ -6,6 +6,13 @@ using namespace lighthouse2;
 class AABB
 {
 public:
-	float3 minBounds;
-	float3 maxBounds;
+	AABB() {};
+	AABB(float3 min, float3 max) 
+	{
+		minBounds = min;
+		maxBounds = max;
+	};
+
+	float3 minBounds = make_float3(INT_MAX);
+	float3 maxBounds = make_float3(INT_MIN);
 };

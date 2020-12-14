@@ -155,7 +155,8 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 		
 
 	// Calculate the bounding box for each bin.
-	AABB bbOfBin[K] = { make_float3(INT_MAX), make_float3(INT_MIN)};
+	AABB bbOfBin[K] = {};
+
 	for (uint i = 0; i < primitives.size(); i++) {
 		bbOfBin[binID[i]].minBounds = fminf(bbOfBin[binID[i]].minBounds, tb[i].minBounds);
 		bbOfBin[binID[i]].maxBounds = fmaxf(bbOfBin[binID[i]].maxBounds, tb[i].maxBounds);
