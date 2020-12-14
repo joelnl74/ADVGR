@@ -92,6 +92,8 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 		tb.push_back(bb);
 		// Save the centroid of this bounding box.
 		c.push_back(CalculateBoundingBoxCenter(bb));
+
+		// TODO: FMAXF DOESN'T WORK?!
 		// Check whether the bounds of this primitive are min/max of voxel.
 		vb.minBounds = fminf(bb.minBounds, vb.minBounds);
 		vb.maxBounds = fmaxf(bb.maxBounds, vb.maxBounds);
@@ -99,6 +101,56 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 		cb.minBounds = fminf(bb.minBounds, cb.minBounds);
 		cb.maxBounds = fmaxf(bb.maxBounds, cb.maxBounds);
 	}
+
+	// Check which axis is the longest.
+	Axis longestAxis;
+	float xScale = vb.maxBounds.x - vb.minBounds.x;
+	float yScale = vb.maxBounds.y - vb.minBounds.y;
+	float zScale = vb.maxBounds.z - vb.minBounds.z;
+	if ((xScale >= yScale) && (xScale >= zScale)) longestAxis = X;
+	if ((yScale >= xScale) && (yScale >= zScale)) longestAxis = Y;
+	if ((zScale >= xScale) && (zScale >= yScale)) longestAxis = Z;
+
+	float maxCentroid;
+	float minCentroid;
+
+	// Number of bins.
+	uint K = 8;
+	// Bin distance.
+	float k;
+
+	if (longestAxis == X) {
+		maxCentroid = cb.maxBounds.x;
+		minCentroid = cb.minBounds.x;
+		k = K * (1 - EPSILON) / (cb.maxBounds.x - cb.minBounds.x);
+	}
+	if (longestAxis == Y) {
+		maxCentroid = cb.maxBounds.y;
+		minCentroid = cb.minBounds.y;
+		k = K * (1 - EPSILON) / (cb.maxBounds.y - cb.minBounds.y);
+	}
+	if (longestAxis == Z) {
+		maxCentroid = cb.maxBounds.z;
+		minCentroid = cb.minBounds.z;
+		k = K * (1 - EPSILON) / (cb.maxBounds.z - cb.minBounds.z);
+	}
+	
+	// Divide each primitive over the bins we made.
+	vector<int> binID;
+	for (uint i = 0; i < primitives.size(); i++)
+	{
+		int id;
+		if (longestAxis == X) id = (int)(k * (c[i].x - cb.minBounds.x));
+		if (longestAxis == Y) id = (int)(k * (c[i].y - cb.minBounds.y));
+		if (longestAxis == Z) id = (int)(k * (c[i].z - cb.minBounds.z));
+		
+		binID.push_back(id);
+	}
+	
+	// plane[0] will have bin[0] on the left and bin[1] to the right.
+	const int number_of_planes = K - 1;
+	int numberOfTrianglesToTheLeft[number_of_planes];
+
 
 	m_IsLeaf = false;
 	SubDivide();
