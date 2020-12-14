@@ -135,8 +135,9 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 		k = K * (1 - EPSILON) / (cb.maxBounds.z - cb.minBounds.z);
 	}
 	
-	// Divide each primitive over the bins we made.
+	// Assign primitives over the K bins we have.
 	vector<int> binID;
+	int numberOfTrianglesInBin[K] = {};
 	for (uint i = 0; i < primitives.size(); i++)
 	{
 		int id;
@@ -145,33 +146,43 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 		if (longestAxis == Z) id = (int)(k * (c[i].z - cb.minBounds.z));
 		
 		binID.push_back(id);
+		numberOfTrianglesInBin[binID[i]]++;
 	}
 
-	int numberOfTrianglesInBin[K] = { 0 };
-	for (uint i = 0; i < primitives.size(); i++)
-		numberOfTrianglesInBin[binID[i]]++;
+	// Count the number of primitives in each bin.
+	
+	// for (uint i = 0; i < primitives.size(); i++)
+		
+
+	// Calculate the bounding box for each bin.
+	AABB bbOfBin[K] = { make_float3(INT_MAX), make_float3(INT_MIN)};
+	for (uint i = 0; i < primitives.size(); i++) {
+		bbOfBin[binID[i]].minBounds = fminf(bbOfBin[binID[i]].minBounds, tb[i].minBounds);
+		bbOfBin[binID[i]].maxBounds = fmaxf(bbOfBin[binID[i]].maxBounds, tb[i].maxBounds);
+	}
 	
 	// plane[0] will have bin[0] on the left and bin[1] to the right.
 	constexpr int number_of_planes = K - 1;
-	int numberOfTrianglesToTheLeft[number_of_planes];
-	float surfaceAreaOfBoxToTheLeft[number_of_planes];
-	int numberOfTrianglesToTheRight[number_of_planes];
-	float surfaceAreaOfBoxToTheRight[number_of_planes];
+	int numberOfTrianglesToTheLeft[number_of_planes] = {};
+	float surfaceAreaOfBoxToTheLeft[number_of_planes] = {};
+	int numberOfTrianglesToTheRight[number_of_planes] = {};
+	float surfaceAreaOfBoxToTheRight[number_of_planes] = {};
 
 	uint numberOfTrianglesLeft = 0;
 	AABB bbLeft;
-	//for (int j = 0; j < number_of_planes; j++)
-	//{
-	//	numberOfTrianglesLeft += numberOfTrianglesInBin[j];
-	//	numberOfTrianglesToTheLeft[j] = numberOfTrianglesLeft;
 
-	//	bboxToTheLeft.expand(bboxOfBin[j]);
-	//	//ATTENTION! If bbox is empty, SA should be 0
-	//	if (bboxToTheLeft.empty())
-	//		surfaceAreaOfBBoxToTheLeft[j] = 0;
-	//	else
-	//		surfaceAreaOfBBoxToTheLeft[j] = bboxToTheLeft.surface_area();
-	//}
+	for (int j = 0; j < number_of_planes; j++)
+	{
+		/*numberOfTrianglesLeft += numberOfTrianglesInBin[j];
+		numberOfTrianglesToTheLeft[j] = numberOfTrianglesLeft;
+
+		bbLeft.expand(bboxofbin[j]);
+		attention! if bbox is empty, sa should be 0
+		if (bboxtotheleft.empty())
+			surfaceareaofbboxtotheleft[j] = 0;
+		else
+			surfaceareaofbboxtotheleft[j] = bboxtotheleft.surface_area();*/
+	}
 
 
 
