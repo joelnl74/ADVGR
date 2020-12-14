@@ -1,4 +1,5 @@
 #include "BVHNode.h"
+#include "BVH.h"
 
 void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 {
@@ -46,49 +47,43 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 	tmin = std::fmax(tzmin, tmin);
 	tmax = std::fmin(tzmax, tmax);
 
-	if (m_IsLeaf)
-	{
-		// True.
+	// If this current node is a leaf, we add this node to the array.
+	if (IsLeaf())
 		hitNode.push_back(*this);
-	}
+	// Otherwise we start traversing the children of this node.
 	else
 	{
-		m_Left->Intersect(ray, hitNode);
-		m_Right->Intersect(ray, hitNode);
+		BVH::pool[startLeft]->Intersect(ray, hitNode);
+		BVH::pool[startLeft++]->Intersect(ray, hitNode);
 	}
 }
 
-void BVHNode::SetupRoot(Mesh& mesh)
+bool BVHNode::IsLeaf()
 {
-	for (int i = 0; i < mesh.vcount / 3; i++)
+	if (count > 0)
 	{
-		primitives.push_back(mesh.triangles[i]);
+		return true;
 	}
 
-	m_IsLeaf = false;
-
-	bounds = CalculateBounds(primitives);
-	SubDivide();
+	return false;
 }
 
-AABB BVHNode::CalculateBounds(vector<CoreTri> &triangles)
+AABB BVHNode::CalculateBounds(int start, int amout)
 {
 	float3 minBoxBounds = make_float3(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 	float3 maxBoxBounds = make_float3(-numeric_limits<float>::max(), -numeric_limits<float>::max(), -numeric_limits<float>::max());
 
-	int size = triangles.size();
-
-	for (int i = 0; i < size; i++)
+	for (int i = 0; i < start + amout; i++)
 	{
-		float3 vertex0 = triangles[i].vertex0;
-		float3 vertex1 = triangles[i].vertex1;
-		float3 vertex2 = triangles[i].vertex2;
+		int index = BVH::indices[i];
+		CoreTri primitive = BVH::primitives[index];
+
+		float3 vertex0 = primitive.vertex0;
+		float3 vertex1 = primitive.vertex1;
+		float3 vertex2 = primitive.vertex2;
 
 		float3 primMin = fminf(fminf(vertex0, vertex1), vertex2);
 		float3 primMax = fmaxf(fmaxf(vertex0, vertex1), vertex2);
-
-		minBoxBounds = fminf(minBoxBounds, primMin);
-		maxBoxBounds = fmaxf(maxBoxBounds, primMax);
 	}
 
 	AABB aabb{};
@@ -106,28 +101,7 @@ float3 BVHNode::CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3
 void BVHNode::SubDivide()
 {		
 	Partition_SAH();
-
-	if (m_Left != NULL)
-	{
-		m_Left->bounds = CalculateBounds(m_Left->primitives);
-		m_Left->SubDivide();
-	}
-	else
-	{
-		m_Root->m_Left->m_IsLeaf = true;
-	}
-
-	if (m_Right != NULL)
-	{
-		m_Right->bounds = CalculateBounds(m_Right->primitives);
-		m_Right->SubDivide();
-	}
-	else
-	{
-		m_Root->m_Right->m_IsLeaf = true;
-	}
 }
-
 
 float BVHNode::CalculateSurfaceArea(AABB bounds) 
 {
@@ -141,11 +115,14 @@ void BVHNode::Partition_SAH()
 	float bestArea = numeric_limits<float>::max();
 
 	// The primitives that give the best area.
-	vector<CoreTri> bestObjectsLeft;
-	vector<CoreTri> bestObjectsRight;
+	int bestObjectsLeft;
+	int bestObjectsRight;
+
+	int bestCountLeft = 0;
+	int bestCountRight = 0;
 
 	// Here we consider the centroid of each primitive as potential split.
-	for (auto& primitive : primitives)
+	for (auto& primitive : BVH::primitives)
 	{
 		// Potential split.
 		float3 split = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
@@ -155,70 +132,76 @@ void BVHNode::Partition_SAH()
 		float3 leftPrimitives = make_float3(0);
 		float3 rightPrimitives = make_float3(0);
 
-		vector<CoreTri> objectsRightX;
-		vector<CoreTri> objectsLeftX;
-		vector<CoreTri> objectsRightY;
-		vector<CoreTri> objectsLeftY;
-		vector<CoreTri> objectsRightZ;
-		vector<CoreTri> objectsLeftZ;
+		int objectsRightX = -1;
+		int objectsLeftX = -1;
+		int objectsRightY = -1;
+		int objectsLeftY = -1;
+		int objectsRightZ = -1;
+		int objectsLeftZ = -1;
 
 		// Divide the other primitives over the split
-		for (auto& primitive : primitives)
+		for (auto& index : BVH::indices)
 		{
+			auto& primitive = BVH::primitives[index];
 			float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
 
 			if (centroid.x <= split.x)
 			{
 				leftPrimitives.x++;
 
-				objectsLeftX.push_back(primitive);
+				if(objectsLeftX != -1)
+					objectsLeftX = index;
 			}
 			else
 			{
 				rightPrimitives.x++;
-
-				objectsRightX.push_back(primitive);
+				if (objectsRightX != -1)
+					objectsRightX = index;
 			}
 			if (centroid.y <= split.y)
 			{
 				leftPrimitives.y++;
 
-				objectsLeftY.push_back(primitive);
+				if (objectsLeftY != -1)
+					objectsLeftY = index;
 			}
 			else
 			{
 				rightPrimitives.y++;
 
-				objectsRightY.push_back(primitive);
+				if (objectsLeftY != -1)
+					objectsLeftY = index;;
 			}
 			if (centroid.z <= split.z)
 			{
 				leftPrimitives.z++;
 
-				objectsLeftZ.push_back(primitive);
+				if (objectsLeftZ != -1)
+					objectsLeftZ = index;;
 			}
 			else
 			{
 				rightPrimitives.z++;
 
-				objectsRightZ.push_back(primitive);
+				if (objectsRightZ != -1)
+					objectsRightZ = index;;
 			}
 		}
 
-		AABB leftBoxX = CalculateBounds(objectsLeftX);
-		AABB rightBoxX = CalculateBounds(objectsRightX);
+		AABB leftBoxX = CalculateBounds(objectsLeftX, leftPrimitives.x);
+		AABB rightBoxX = CalculateBounds(objectsRightX, rightPrimitives.x);
 
 		float surfaceAreaLeftX = CalculateSurfaceArea(leftBoxX);
 		float surfaceAreaRightX = CalculateSurfaceArea(rightBoxX);
 
-		AABB leftBoxY = CalculateBounds(objectsLeftY);
-		AABB rightBoxY = CalculateBounds(objectsRightY);
+		AABB leftBoxY = CalculateBounds(objectsLeftY, leftPrimitives.y);
+		AABB rightBoxY = CalculateBounds(objectsRightY, rightPrimitives.y);
 
 		float surfaceAreaLeftY = CalculateSurfaceArea(leftBoxY);
 		float surfaceAreaRightY = CalculateSurfaceArea(rightBoxY);
 
-		AABB leftBoxZ = CalculateBounds(objectsLeftZ);
-		AABB rightBoxZ = CalculateBounds(objectsRightZ);
+		AABB leftBoxZ = CalculateBounds(objectsLeftZ, leftPrimitives.z);
+		AABB rightBoxZ = CalculateBounds(objectsRightZ, rightPrimitives.z);
 
 		float surfaceAreaLeftZ = CalculateSurfaceArea(leftBoxZ);
 		float surfaceAreaRightZ = CalculateSurfaceArea(rightBoxZ);
@@ -232,95 +215,46 @@ void BVHNode::Partition_SAH()
 			bestObjectsRight = objectsRightX;
 			bestObjectsLeft = objectsLeftX;
 			bestArea = currentAreaX;
-			partitionScore = bestArea;
+			bestCountLeft = leftPrimitives.x;
+			bestCountRight = rightPrimitives.x;
 		}
 		if (currentAreaY < bestArea && isnan(currentAreaY) == false)
 		{
 			bestObjectsRight = objectsRightY;
 			bestObjectsLeft = objectsLeftY;
 			bestArea = currentAreaY;
-			partitionScore = bestArea;
+			bestCountLeft = leftPrimitives.y;
+			bestCountRight = rightPrimitives.y;
 		}
 		if (currentAreaZ < bestArea && isnan(currentAreaZ) == false)
 		{
 			bestObjectsRight = objectsRightZ;
 			bestObjectsLeft = objectsLeftZ;
 			bestArea = currentAreaZ;
-			partitionScore = bestArea;
+			bestCountLeft = leftPrimitives.z;
+			bestCountRight = rightPrimitives.z;
 		}
 	}
 
-	if (m_Root != NULL && bestArea >= m_Root->partitionScore)
+	if (bestArea >= m_Root->partitionScore)
 	{
 	}
 	else
 	{
-		m_Left = new BVHNode();
-		m_Right = new BVHNode();
+		auto left = BVH::pool[BVH::poolPtr];
+		auto right = BVH::pool[BVH::poolPtr];
 
-		m_Left->m_Root = this;
-		m_Right->m_Root = this;
+		left->bounds = CalculateBounds(bestObjectsLeft, bestCountLeft);
+		left->SubDivide();
 
-		m_Left->primitives = bestObjectsLeft;
-		m_Right->primitives = bestObjectsRight;
-	}
-}
+		right->bounds = CalculateBounds(bestObjectsRight, bestCountRight);
+		right->SubDivide();
 
-// Split the primitives over left and right child
-void BVHNode::Partition()
-{
-	// Make a middle split along the axis with the longest side
-	float longestX = abs(bounds.maxBounds.x - bounds.minBounds.x);
-	float longestY = abs(bounds.maxBounds.y - bounds.minBounds.y);
-	float longestZ = abs(bounds.maxBounds.z - bounds.minBounds.z);
+		left->startLeft = startLeft;
+		right->startLeft = startLeft + left->count;
 
-	float splitAxis = max(max(longestX, longestY), longestZ);
+		startLeft = BVH::poolPtr - 2;
 
-	Axis axis;
-	float splitplane;
-
-	if (splitAxis == longestX)
-	{
-		splitplane = bounds.maxBounds.x - (longestX / 2);
-		axis = Axis::X;
-	}
-	else if (splitAxis == longestY)
-	{
-		splitplane = bounds.maxBounds.y - (longestY / 2);
-		axis = Axis::Y;
-	}
-	else
-	{
-		splitplane = bounds.maxBounds.z - (longestZ / 2);
-		axis = Axis::Z;
-	}
-
-	for (auto& primitive : primitives) 
-	{
-		float3 centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
-
-		switch (axis) 
-		{
-		case Axis::X:
-			if (centroid.x < splitplane)
-				m_Left->primitives.push_back(primitive);
-			else
-				m_Right->primitives.push_back(primitive);
-			break;
-		case Axis::Y:
-			if (centroid.y < splitplane)
-				m_Left->primitives.push_back(primitive);
-			else
-				m_Right->primitives.push_back(primitive);
-			break;
-		case Axis::Z:
-			if (centroid.z < splitplane)
-				m_Left->primitives.push_back(primitive);
-			else
-				m_Right->primitives.push_back(primitive);
-			break;
-		default:
-			return;
-		}
+		count = 0;
 	}
 }
