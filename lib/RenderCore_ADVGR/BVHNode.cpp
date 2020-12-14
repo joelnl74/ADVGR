@@ -217,7 +217,7 @@ void BVHNode::Partition_SAH()
 		float currentAreaY = surfaceAreaLeftY * leftPrimitives.y + surfaceAreaRightY * rightPrimitives.y;
 		float currentAreaZ = surfaceAreaLeftZ * leftPrimitives.z + surfaceAreaRightZ * rightPrimitives.z;
 
-		if (currentAreaX < bestArea && isnan(currentAreaX) == false)
+		if (currentAreaX < bestArea && objectsRightX != - 1 && objectsLeftX != -1)
 		{
 			bestObjectsRight = objectsRightX;
 			bestObjectsLeft = objectsLeftX;
@@ -225,7 +225,7 @@ void BVHNode::Partition_SAH()
 			bestCountLeft = leftPrimitives.x;
 			bestCountRight = rightPrimitives.x;
 		}
-		if (currentAreaY < bestArea && isnan(currentAreaY) == false)
+		if (currentAreaY < bestArea && objectsRightY != -1 && objectsLeftY != -1)
 		{
 			bestObjectsRight = objectsRightY;
 			bestObjectsLeft = objectsLeftY;
@@ -233,7 +233,7 @@ void BVHNode::Partition_SAH()
 			bestCountLeft = leftPrimitives.y;
 			bestCountRight = rightPrimitives.y;
 		}
-		if (currentAreaZ < bestArea && isnan(currentAreaZ) == false)
+		if (currentAreaZ < bestArea && objectsRightZ != -1 && objectsLeftZ != -1)
 		{
 			bestObjectsRight = objectsRightZ;
 			bestObjectsLeft = objectsLeftZ;
@@ -247,17 +247,17 @@ void BVHNode::Partition_SAH()
 	{
 		auto left = BVH::pool[BVH::poolPtr++];
 		left->bounds = CalculateBounds(bestObjectsLeft, bestCountLeft);
-		left->SubDivide();
 
 		left->startLeft = startLeft;
 
 		auto right = BVH::pool[BVH::poolPtr++];
 		right->bounds = CalculateBounds(bestObjectsRight, bestCountRight);
-		right->SubDivide();
-
 		right->startLeft = startLeft + left->count;
 
 		startLeft = BVH::poolPtr - 2;
 		count = 0;
+
+		left->SubDivide();
+		right->SubDivide();
 	}
 }
