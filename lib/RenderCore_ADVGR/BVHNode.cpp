@@ -51,10 +51,10 @@ void BVHNode::Intersect(Ray& ray, vector<BVHNode>& hitNode)
 	if (IsLeaf())
 		hitNode.push_back(*this);
 	// Otherwise we start traversing the children of this node.
-	else
+	else if(startLeft + 1 < BVH::pool.size())
 	{
 		BVH::pool[startLeft]->Intersect(ray, hitNode);
-		BVH::pool[startLeft++]->Intersect(ray, hitNode);
+		BVH::pool[startLeft + 1]->Intersect(ray, hitNode);
 	}
 }
 
@@ -124,12 +124,11 @@ void BVHNode::Partition_SAH(float rootSurfaceArea)
 	int bestCountLeft = 0;
 	int bestCountRight = 0;
 
-
 	// Here we consider the centroid of each primitive as potential split.
-	for (auto& primitive : BVH::primitives)
+	for (auto& splitPointPrimitive : BVH::primitives)
 	{
 		// Potential split.
-		float3 split = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2);
+		float3 split = CalculateTriangleCentroid(splitPointPrimitive.vertex0, splitPointPrimitive.vertex1, splitPointPrimitive.vertex2);
 
 		// Keep track of the number of primitives divided over left and right
 		// for the current split over three axes.
@@ -243,18 +242,20 @@ void BVHNode::Partition_SAH(float rootSurfaceArea)
 	if (bestArea < rootSurfaceArea)
 	{
 		auto left = BVH::pool[BVH::poolPtr++];
-		left->bounds = CalculateBounds(bestObjectsLeft, bestCountLeft);
 		left->startLeft = bestObjectsLeft;
 		left->count = bestCountLeft;
+		left->bounds = CalculateBounds(bestObjectsLeft, bestCountLeft);
 
 		auto right = BVH::pool[BVH::poolPtr++];
-		right->bounds = CalculateBounds(bestObjectsRight, bestCountRight);
 		right->startLeft = bestObjectsRight;
 		right->count = bestCountRight;
+		right->bounds = CalculateBounds(bestObjectsRight, bestCountRight);
 
 		startLeft = BVH::poolPtr - 2;
 
 		left->Partition_SAH(bestArea);
 		right->Partition_SAH(bestArea);
+
+		count = 0;
 	}
 }

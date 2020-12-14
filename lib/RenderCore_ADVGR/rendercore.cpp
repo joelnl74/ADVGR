@@ -139,9 +139,9 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	for (int i = 0; i < nodes.size(); i++)
 	{
 		int start = nodes[i].startLeft;
-		int count = start + nodes[i].count;
+		int count = nodes[i].count;
 
-		for (int j = start; j < start + count ; j++)
+		for (int j = start; j < count; j++)
 		{
 			auto& primitive = BVH::primitives[j];
 

@@ -26,7 +26,7 @@ void BVH::ConstructBVH(Mesh& mesh)
 
 	// Number of primitives we have in the scene
 	uint N = primitives.size();
-	uint MaxNodes = N * 2;
+	uint MaxNodes = N * 2 - 1;
 
 	// Create appropriate size pool, since we now know the max size
 	pool.resize(MaxNodes);
