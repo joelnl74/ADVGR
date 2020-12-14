@@ -16,17 +16,15 @@ public:
 	float3 CalculateTriangleCentroid(float3 vertex0, float3 vertex1, float3 vertex2);
 	float CalculateSurfaceArea(AABB bounds);
 	void SubDivide();
-	void Partition_SAH();
-	void Partition();
+	void Partition_SAH(float rootPartitionScore);
+	float CalculateBestArea(float3 splitPoint, vector<CoreTri>& bestObjectsRight, vector<CoreTri>& bestObjectsLeft);
 
 public:
-	BVHNode* m_Root;
 	BVHNode* m_Right;
 	BVHNode* m_Left;
 	bool m_IsLeaf;
 	AABB bounds;
 	vector<CoreTri> primitives;
-	float partitionScore;
 };
 
 enum Axis
