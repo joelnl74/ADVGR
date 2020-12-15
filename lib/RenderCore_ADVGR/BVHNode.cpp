@@ -283,8 +283,7 @@ void BVHNode::Partition_Binned_SAH()
 		m_Right = new BVHNode();
 		m_Right->primitives = rightPrimitives;
 		m_Right->bounds = CalculateVoxelBounds(rightPrimitives);
-
-		m_Left->Partition_Binned_SAH();
+		m_Right->Partition_Binned_SAH();
 	}
 
 	//// In-place ID partitioning
