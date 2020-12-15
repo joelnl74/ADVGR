@@ -262,7 +262,7 @@ void BVHNode::Partition_Binned_SAH()
 	}
 
 	// Termination criterion
-	if (leftPrimitives.size() < 3) {
+	if (leftPrimitives.size() < 3 || rightPrimitives.size() < 3) {
 		m_IsLeaf = true;
 		return;
 	}
@@ -272,19 +272,13 @@ void BVHNode::Partition_Binned_SAH()
 		m_Left->primitives = leftPrimitives;
 		m_Left->bounds = CalculateVoxelBounds(leftPrimitives);
 		m_Left->Partition_Binned_SAH();
-	}
 
-	if (rightPrimitives.size() < 3) {
-		m_IsLeaf = true;
-		return;
-	}
-	else
-	{
 		m_Right = new BVHNode();
 		m_Right->primitives = rightPrimitives;
 		m_Right->bounds = CalculateVoxelBounds(rightPrimitives);
 		m_Right->Partition_Binned_SAH();
 	}
+	
 
 	//// In-place ID partitioning
 	//int mid = trianglesLeft[partitionPlaneID];
