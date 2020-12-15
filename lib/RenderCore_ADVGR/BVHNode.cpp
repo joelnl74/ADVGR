@@ -68,10 +68,10 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 	m_IsLeaf = false;
 
 	bounds = CalculateVoxelBounds(primitives);
-	Partition_Binned_SAH(*this);
+	Partition_Binned_SAH();
 }
 
-void BVHNode::Partition_Binned_SAH(BVHNode node)
+void BVHNode::Partition_Binned_SAH()
 {
 	if (m_IsLeaf)
 		return;
@@ -222,59 +222,70 @@ void BVHNode::Partition_Binned_SAH(BVHNode node)
 			for (auto& primitive : primitives)
 			{
 				// Take the max bounding box of the bin that has the best split.
-				float split = bbOfBin[partitionPlaneID].maxBounds.x;
+				float split = bbOfBin[partitionPlaneID - 1].maxBounds.x;
 				float centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2).x;
 				if (centroid < split)
 					leftPrimitives.push_back(primitive);
 				else
 					rightPrimitives.push_back(primitive);
 			}
+			break;
 		}
 		case Y:
 		{
 			for (auto& primitive : primitives)
 			{
 				// Take the max bounding box of the bin that has the best split.
-				float split = bbOfBin[partitionPlaneID].maxBounds.y;
+				float split = bbOfBin[partitionPlaneID - 1].maxBounds.y;
 				float centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2).y;
 				if (centroid < split)
 					leftPrimitives.push_back(primitive);
 				else
 					rightPrimitives.push_back(primitive);
 			}
+			break;
 		}
 		case Z:
 		{
 			for (auto& primitive : primitives)
 			{
 				// Take the max bounding box of the bin that has the best split.
-				float split = bbOfBin[partitionPlaneID].maxBounds.z;
+				float split = bbOfBin[partitionPlaneID - 1].maxBounds.z;
 				float centroid = CalculateTriangleCentroid(primitive.vertex0, primitive.vertex1, primitive.vertex2).z;
 				if (centroid < split)
 					leftPrimitives.push_back(primitive);
 				else
 					rightPrimitives.push_back(primitive);
 			}
+			break;
 		}
 	}
 
-
-	m_Left = new BVHNode();
-	m_Left->primitives = leftPrimitives;
-	m_Left->bounds = CalculateVoxelBounds(m_Left->primitives);
 	// Termination criterion
 	if (leftPrimitives.size() < 3) {
-		m_Left->m_IsLeaf = true;
+		m_IsLeaf = true;
+		return;
 	}
-	Partition_Binned_SAH(*m_Left);
+	else 
+	{
+		m_Left = new BVHNode();
+		m_Left->primitives = leftPrimitives;
+		m_Left->bounds = CalculateVoxelBounds(leftPrimitives);
+		m_Left->Partition_Binned_SAH();
+	}
 
-	m_Right = new BVHNode();
-	m_Right->primitives = rightPrimitives;
-	m_Right->bounds = CalculateVoxelBounds(m_Right->primitives);
 	if (rightPrimitives.size() < 3) {
-		m_Right->m_IsLeaf = true;
+		m_IsLeaf = true;
+		return;
 	}
-	Partition_Binned_SAH(*m_Right);
+	else
+	{
+		m_Right = new BVHNode();
+		m_Right->primitives = rightPrimitives;
+		m_Right->bounds = CalculateVoxelBounds(rightPrimitives);
+
+		m_Left->Partition_Binned_SAH();
+	}
 
 	//// In-place ID partitioning
 	//int mid = trianglesLeft[partitionPlaneID];
