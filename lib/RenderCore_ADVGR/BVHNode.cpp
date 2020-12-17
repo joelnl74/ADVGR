@@ -183,7 +183,7 @@ void BVHNode::Partition_Binned_SAH(float parentScore)
 
 	uint numberOfTrianglesRight = 0;
 	AABB bbRight;
-	for (int j = number_of_planes; j >= 0; j--)
+	for (int j = (number_of_planes - 1); j >= 0; j--)
 	{
 		numberOfTrianglesRight += numberOfTrianglesInBin[j + 1];
 		trianglesRight[j] = numberOfTrianglesRight;
