@@ -121,17 +121,17 @@ void BVHNode::Partition_Binned_SAH(float parentScore)
 	if (longestAxis == X) {
 		maxCentroid = cb.maxBounds.x;
 		minCentroid = cb.minBounds.x;
-		k = K * (1 - EPSILON) / (cb.maxBounds.x - cb.minBounds.x);
+		k = K * (1 - EPSILON) / ((cb.maxBounds.x + EPSILON) - (cb.minBounds.x - EPSILON));
 	}
 	if (longestAxis == Y) {
 		maxCentroid = cb.maxBounds.y;
 		minCentroid = cb.minBounds.y;
-		k = K * (1 - EPSILON) / (cb.maxBounds.y - cb.minBounds.y);
+		k = K * (1 - EPSILON) / ((cb.maxBounds.y + EPSILON) - (cb.minBounds.y - EPSILON));
 	}
 	if (longestAxis == Z) {
 		maxCentroid = cb.maxBounds.z;
 		minCentroid = cb.minBounds.z;
-		k = K * (1 - EPSILON) / (cb.maxBounds.z - cb.minBounds.z);
+		k = K * (1 - EPSILON) / ((cb.maxBounds.z + EPSILON) - (cb.minBounds.z - EPSILON));
 	}
 
 	// Assign primitives over the K bins we have.
