@@ -56,9 +56,10 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	memcpy(newMesh.triangles, triangleData, (vertexCount / 3) * sizeof(CoreTri));
 	meshes.push_back(newMesh);
 
+	buildBvhTimer.reset();
 	root = new BVHNode();
 	root->ConstructBVH(newMesh);
-	//root->SetupRoot(newMesh);
+	coreStats.bvhBuildTime = buildBvhTimer.elapsed();
 }
 
 //  +-----------------------------------------------------------------------------+

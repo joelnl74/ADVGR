@@ -46,7 +46,7 @@ void PrepareScene()
 	}
 	else
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/cubes.obj", 1);
+		sceneMesh = renderer->AddMesh("../_shareddata/teapot.obj", 0.05);
 	}
 
 	renderer->AddInstance(sceneMesh);

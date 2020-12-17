@@ -69,6 +69,7 @@ private:
 	int targetTextureID = 0;						// ID of the target OpenGL texture
 	vector<Mesh> meshes;							// mesh data storage
 	Timer renderTimer;								// timers for asynchronous rendering
+	Timer buildBvhTimer;							// timers for building bvh tree
 public:
 	CoreStats coreStats;							// rendering statistics
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
