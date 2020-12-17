@@ -75,179 +75,171 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 
 void BVHNode::Partition_Binned_SAH(float parentScore)
 {
-	if (this->primitives.size() < 3) {
-		this->m_Root->m_IsLeaf = true;
+	// The bounding box of every single triangle in the mesh.
+	vector<AABB> tb;
+	// The centroid of every bounding box of a triangle.
+	vector<float3> c;
+	// The bounding box of a voxel/whole mesh.
+	AABB vb{ make_float3(INT_MAX) , make_float3(INT_MIN) };
+	// The bounding box for all centroids.
+	AABB cb{ make_float3(INT_MAX) , make_float3(INT_MIN) };
+
+	for (int i = 0; i < primitives.size(); i++)
+	{
+		// Calculate bounding box of current primitive.
+		AABB bb = CalculateTriangleBounds(primitives[i]);
+		// Save bounding box of this primitive.
+		tb.push_back(bb);
+		// Save the centroid of this bounding box.
+		c.push_back(CalculateBoundingBoxCenter(bb));
+
+		// Check whether the bounds of this primitive are min/max of voxel.
+		vb.minBounds = fminf(bb.minBounds, vb.minBounds);
+		vb.maxBounds = fmaxf(bb.maxBounds, vb.maxBounds);
+		// Do the same for every centroid.
+		cb.minBounds = fminf(c[i], cb.minBounds);
+		cb.maxBounds = fmaxf(c[i], cb.maxBounds);
+	}
+
+	// Check which axis is the longest.
+	Axis longestAxis{};
+	float xScale = vb.maxBounds.x - vb.minBounds.x;
+	float yScale = vb.maxBounds.y - vb.minBounds.y;
+	float zScale = vb.maxBounds.z - vb.minBounds.z;
+	if ((xScale >= yScale) && (xScale >= zScale)) longestAxis = X;
+	if ((yScale >= xScale) && (yScale >= zScale)) longestAxis = Y;
+	if ((zScale >= xScale) && (zScale >= yScale)) longestAxis = Z;
+
+	float maxCentroid;
+	float minCentroid ;
+
+	// Number of bins.
+	constexpr uint K = 16;
+	// Bin distance.
+	float k;
+
+	if (longestAxis == X) {
+		maxCentroid = cb.maxBounds.x;
+		minCentroid = cb.minBounds.x;
+		k = K * (1 - EPSILON) / (cb.maxBounds.x - cb.minBounds.x);
+	}
+	if (longestAxis == Y) {
+		maxCentroid = cb.maxBounds.y;
+		minCentroid = cb.minBounds.y;
+		k = K * (1 - EPSILON) / (cb.maxBounds.y - cb.minBounds.y);
+	}
+	if (longestAxis == Z) {
+		maxCentroid = cb.maxBounds.z;
+		minCentroid = cb.minBounds.z;
+		k = K * (1 - EPSILON) / (cb.maxBounds.z - cb.minBounds.z);
+	}
+
+	// Assign primitives over the K bins we have.
+	vector<int> binID;
+	// Count the number of primitives in each bin.
+	int numberOfTrianglesInBin[K] = {};
+	// Calculate the bounding box for each bin.
+	AABB bbOfBin[K] = {};
+	for (uint i = 0; i < primitives.size(); i++)
+	{
+		// Assign each primitive to the appropriate bin.
+		int id;
+		if (longestAxis == X) id = (int)(k * (c[i].x - cb.minBounds.x));
+		if (longestAxis == Y) id = (int)(k * (c[i].y - cb.minBounds.y));
+		if (longestAxis == Z) id = (int)(k * (c[i].z - cb.minBounds.z));
+
+		binID.push_back(id);
+		numberOfTrianglesInBin[binID[i]]++;
+
+		bbOfBin[binID[i]].minBounds = fminf(bbOfBin[binID[i]].minBounds, tb[i].minBounds);
+		bbOfBin[binID[i]].maxBounds = fmaxf(bbOfBin[binID[i]].maxBounds, tb[i].maxBounds);
+	}
+
+	// plane[0] will have bin[0] on the left and bin[1] to the right.
+	constexpr int number_of_planes = K - 1;
+	// Number of triangles on the left side of the plane.
+	int trianglesLeft[number_of_planes] = {};
+	// Surface area of the bounding box on the left side of the plane.
+	float saBBleft[number_of_planes] = {};
+	// Number of triangles on the right side of the plane.
+	int trianglesRight[number_of_planes] = {};
+	// Surface area of the bounding box on the right side of the plane.
+	float saBBright[number_of_planes] = {};
+
+	uint numberOfTrianglesLeft = 0;
+	AABB bbLeft;
+	for (int j = 0; j < number_of_planes; j++)
+	{
+		numberOfTrianglesLeft += numberOfTrianglesInBin[j];
+		trianglesLeft[j] = numberOfTrianglesLeft;
+		
+		bbLeft = bbOfBin[j];
+		if (bbLeft.minBounds.x == INT_MAX && bbLeft.minBounds.y == INT_MAX && bbLeft.minBounds.z == INT_MAX &&
+			bbLeft.maxBounds.x == INT_MIN && bbLeft.maxBounds.y == INT_MIN && bbLeft.maxBounds.z == INT_MIN)
+			saBBleft[j] = 0;
+		else
+			saBBleft[j] = CalculateSurfaceArea(bbLeft);
+	}
+
+	uint numberOfTrianglesRight = 0;
+	AABB bbRight;
+	for (int j = number_of_planes; j >= 0; j--)
+	{
+		numberOfTrianglesRight += numberOfTrianglesInBin[j + 1];
+		trianglesRight[j] = numberOfTrianglesRight;
+
+		bbRight = bbOfBin[j + 1];
+		if (bbRight.minBounds.x == INT_MAX && bbRight.minBounds.y == INT_MAX && bbRight.minBounds.z == INT_MAX &&
+			bbRight.maxBounds.x == INT_MIN && bbRight.maxBounds.y == INT_MIN && bbRight.maxBounds.z == INT_MIN)
+			saBBright[j] = 0;
+		else
+			saBBright[j] = CalculateSurfaceArea(bbRight);
+	}
+
+	int partitionPlaneID;
+	float lowestCost = parentScore;
+
+	// Evaluate which plane is the best split.
+	for (int j = 0; j < number_of_planes; j++)
+	{
+		float cost = trianglesLeft[j] * saBBleft[j] + trianglesRight[j] * saBBright[j];
+		if (cost < lowestCost)
+		{
+			lowestCost = cost;
+			partitionPlaneID = j;
+		}
+	}
+
+	if (lowestCost == parentScore)
+	{
+		m_IsLeaf = true;
+
 		return;
 	}
-	else
+
+	vector<CoreTri> leftPrimitives;
+	vector<CoreTri> rightPrimitives;
+
+	// Divide the primitives over left and right child with optimal split
+	for (uint i = 0; i < primitives.size(); i++)
 	{
-		// The bounding box of every single triangle in the mesh.
-		vector<AABB> tb;
-		// The centroid of every bounding box of a triangle.
-		vector<float3> c;
-		// The bounding box of a voxel/whole mesh.
-		AABB vb{ make_float3(INT_MAX) , make_float3(INT_MIN) };
-		// The bounding box for all centroids.
-		AABB cb{ make_float3(INT_MAX) , make_float3(INT_MIN) };
-
-		for (int i = 0; i < primitives.size(); i++)
-		{
-			// Calculate bounding box of current primitive.
-			AABB bb = CalculateTriangleBounds(primitives[i]);
-			// Save bounding box of this primitive.
-			tb.push_back(bb);
-			// Save the centroid of this bounding box.
-			c.push_back(CalculateBoundingBoxCenter(bb));
-
-			// Check whether the bounds of this primitive are min/max of voxel.
-			vb.minBounds = fminf(bb.minBounds, vb.minBounds);
-			vb.maxBounds = fmaxf(bb.maxBounds, vb.maxBounds);
-			// Do the same for every centroid.
-			cb.minBounds = fminf(c[i], cb.minBounds);
-			cb.maxBounds = fmaxf(c[i], cb.maxBounds);
-		}
-
-		// Check which axis is the longest.
-		Axis longestAxis{};
-		float xScale = vb.maxBounds.x - vb.minBounds.x;
-		float yScale = vb.maxBounds.y - vb.minBounds.y;
-		float zScale = vb.maxBounds.z - vb.minBounds.z;
-		if ((xScale >= yScale) && (xScale >= zScale)) longestAxis = X;
-		if ((yScale >= xScale) && (yScale >= zScale)) longestAxis = Y;
-		if ((zScale >= xScale) && (zScale >= yScale)) longestAxis = Z;
-
-		float maxCentroid = INT_MAX;
-		float minCentroid = INT_MIN;
-
-		// Number of bins.
-		constexpr uint K = 16;
-		// Bin distance.
-		float k;
-
-		if (longestAxis == X) {
-			maxCentroid = cb.maxBounds.x;
-			minCentroid = cb.minBounds.x;
-			k = K * (1 - EPSILON) / (cb.maxBounds.x - cb.minBounds.x);
-		}
-		if (longestAxis == Y) {
-			maxCentroid = cb.maxBounds.y;
-			minCentroid = cb.minBounds.y;
-			k = K * (1 - EPSILON) / (cb.maxBounds.y - cb.minBounds.y);
-		}
-		if (longestAxis == Z) {
-			maxCentroid = cb.maxBounds.z;
-			minCentroid = cb.minBounds.z;
-			k = K * (1 - EPSILON) / (cb.maxBounds.z - cb.minBounds.z);
-		}
-
-		// Assign primitives over the K bins we have.
-		vector<int> binID;
-		// Count the number of primitives in each bin.
-		int numberOfTrianglesInBin[K] = {};
-		// Calculate the bounding box for each bin.
-		AABB bbOfBin[K] = {};
-		for (uint i = 0; i < primitives.size(); i++)
-		{
-			// Assign each primitive to the appropriate bin.
-			int id;
-			if (longestAxis == X) id = (int)(k * (c[i].x - cb.minBounds.x));
-			if (longestAxis == Y) id = (int)(k * (c[i].y - cb.minBounds.y));
-			if (longestAxis == Z) id = (int)(k * (c[i].z - cb.minBounds.z));
-
-			binID.push_back(id);
-
-			numberOfTrianglesInBin[binID[i]]++;
-
-			bbOfBin[binID[i]].minBounds = fminf(bbOfBin[binID[i]].minBounds, tb[i].minBounds);
-			bbOfBin[binID[i]].maxBounds = fmaxf(bbOfBin[binID[i]].maxBounds, tb[i].maxBounds);
-		}
-
-		// plane[0] will have bin[0] on the left and bin[1] to the right.
-		constexpr int number_of_planes = K - 1;
-		// Number of triangles on the left side of the plane.
-		int trianglesLeft[number_of_planes] = {};
-		// Surface area of the bounding box on the left side of the plane.
-		float saBBleft[number_of_planes] = {};
-		// Number of triangles on the right side of the plane.
-		int trianglesRight[number_of_planes] = {};
-		// Surface area of the bounding box on the right side of the plane.
-		float saBBright[number_of_planes] = {};
-
-		uint numberOfTrianglesLeft = 0;
-		AABB bbLeft;
-		for (int j = 0; j < number_of_planes; j++)
-		{
-			numberOfTrianglesLeft += numberOfTrianglesInBin[j];
-			trianglesLeft[j] = numberOfTrianglesLeft;
-
-			bbLeft = bbOfBin[j];
-			if (bbLeft.minBounds.x == INT_MAX && bbLeft.minBounds.y == INT_MAX && bbLeft.minBounds.z == INT_MAX &&
-				bbLeft.maxBounds.x == INT_MIN && bbLeft.maxBounds.y == INT_MIN && bbLeft.maxBounds.z == INT_MIN)
-				saBBleft[j] = 0;
-			else
-				saBBleft[j] = CalculateSurfaceArea(bbLeft);
-		}
-
-		uint numberOfTrianglesRight = 0;
-		AABB bbRight;
-		for (int j = (number_of_planes - 1); j >= 0; j--)
-		{
-			numberOfTrianglesRight += numberOfTrianglesInBin[j + 1];
-			trianglesRight[j] = numberOfTrianglesRight;
-
-			bbRight = bbOfBin[j + 1];
-			if (bbRight.minBounds.x == INT_MAX && bbRight.minBounds.y == INT_MAX && bbRight.minBounds.z == INT_MAX &&
-				bbRight.maxBounds.x == INT_MIN && bbRight.maxBounds.y == INT_MIN && bbRight.maxBounds.z == INT_MIN)
-				saBBright[j] = 0;
-			else
-				saBBright[j] = CalculateSurfaceArea(bbRight);
-		}
-
-		int partitionPlaneID;
-		float lowestCost = parentScore;
-
-		// Evaluate which plane is the best split.
-		for (int j = 0; j < number_of_planes; j++)
-		{
-			float cost = trianglesLeft[j] * saBBleft[j] + trianglesRight[j] * saBBright[j];
-			if (cost < lowestCost)
-			{
-				lowestCost = cost;
-				partitionPlaneID = j;
-			}
-		}
-
-		if (parentScore == lowestCost)
-		{
-			m_IsLeaf = true;
-
-			return;
-		}
-
-		vector<CoreTri> leftPrimitives;
-		vector<CoreTri> rightPrimitives;
-
-		// Divide the primitives over left and right child with optimal split
-		for (uint i = 0; i < primitives.size(); i++)
-		{
-			if (binID[i] <= partitionPlaneID)
-				leftPrimitives.push_back(primitives[i]);
-			else
-				rightPrimitives.push_back(primitives[i]);
-		}
-		
-		m_Left = new BVHNode();
-		m_Left->m_Root = this;
-		m_Left->primitives = leftPrimitives;
-		m_Left->bounds = CalculateVoxelBounds(leftPrimitives);
-		m_Left->Partition_Binned_SAH(lowestCost);
-
-		m_Right = new BVHNode();
-		m_Right->m_Root = this;
-		m_Right->primitives = rightPrimitives;
-		m_Right->bounds = CalculateVoxelBounds(rightPrimitives);
-		m_Right->Partition_Binned_SAH(lowestCost);
+		if (binID[i] <= partitionPlaneID)
+			leftPrimitives.push_back(primitives[i]);
+		else
+			rightPrimitives.push_back(primitives[i]);
 	}
+		
+	m_Left = new BVHNode();
+	m_Left->m_Root = this;
+	m_Left->primitives = leftPrimitives;
+	m_Left->bounds = CalculateVoxelBounds(leftPrimitives);
+	m_Left->Partition_Binned_SAH(lowestCost);
+
+	m_Right = new BVHNode();
+	m_Right->m_Root = this;
+	m_Right->primitives = rightPrimitives;
+	m_Right->bounds = CalculateVoxelBounds(rightPrimitives);
+	m_Right->Partition_Binned_SAH(lowestCost);
 }
 
 void BVHNode::Partition_SAH(float partitionScore)
