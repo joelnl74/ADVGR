@@ -111,7 +111,7 @@ void BVHNode::Partition_Binned_SAH(float parentScore)
 	if ((zScale >= xScale) && (zScale >= yScale)) longestAxis = Z;
 
 	float maxCentroid;
-	float minCentroid ;
+	float minCentroid;
 
 	// Number of bins.
 	constexpr uint K = 16;
