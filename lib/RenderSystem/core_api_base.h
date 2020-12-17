@@ -56,6 +56,7 @@ struct CoreStats
 	float shadowTraceTime;				// time spent tracing shadow rays
 	float shadeTime;					// time spent in shading code
 	float filterTime = 0;				// time spent in filter code
+	uint triangleCount = 0;				// triangle count in the scene.
 	// probe
 	int probedInstid;					// id of the instance at probe position
 	int probedTriid = -1;				// id of triangle at probe position
