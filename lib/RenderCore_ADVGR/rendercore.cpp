@@ -56,8 +56,11 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	memcpy(newMesh.triangles, triangleData, (vertexCount / 3) * sizeof(CoreTri));
 	meshes.push_back(newMesh);
 
+	buildBvhTimer.reset();
 	root = new BVHNode();
-	root->SetupRoot(newMesh);
+	root->ConstructBVH(newMesh);
+	coreStats.bvhBuildTime = buildBvhTimer.elapsed();
+	coreStats.triangleCount = newMesh.vcount / 3;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -112,7 +115,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 		screenPixels[i] = (blue << 16) + (green << 8) + red;
 	}
-
 
 	// Copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );

@@ -13,6 +13,8 @@ void UpdateUI()
 	ImGui::Text("Camera position: %5.2f, %5.2f, %5.2f", camPos.x, camPos.y, camPos.z);
 	ImGui::Text("Camera viewdir:  %5.2f, %5.2f, %5.2f", camDir.x, camDir.y, camDir.z);
 	ImGui::Text("Frame time:   %6.2fms", coreStats.renderTime * 1000);
+	ImGui::Text("BVH time:   %6.2fms", coreStats.bvhBuildTime * 1000);
+	ImGui::Text("Triangle count: %d", coreStats.triangleCount);
 	ImGui::End();
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -46,7 +46,7 @@ void PrepareScene()
 	}
 	else
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/cubes.obj", 1);
+		sceneMesh = renderer->AddMesh("../_shareddata/BunnyScene.obj", 2);
 	}
 
 	renderer->AddInstance(sceneMesh);
