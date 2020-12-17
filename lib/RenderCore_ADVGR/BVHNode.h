@@ -10,7 +10,7 @@ class BVHNode
 public:
 	void Intersect(Ray& ray, vector<BVHNode>& hitNode);
 	void ConstructBVH(Mesh& mesh);
-	void Partition_Binned_SAH();
+	void Partition_Binned_SAH(float parentScore);
 	void Partition_SAH(float rootPartitionScore);
 	float3 CalculateBoundingBoxCenter(AABB boundingBox);
 	AABB CalculateTriangleBounds(CoreTri& triangle);

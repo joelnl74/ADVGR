@@ -70,10 +70,10 @@ void BVHNode::ConstructBVH(Mesh& mesh)
 
 	bounds = CalculateVoxelBounds(primitives);
 	//Partition_SAH(INT_MAX);
-	Partition_Binned_SAH();
+	Partition_Binned_SAH(INT_MAX);
 }
 
-void BVHNode::Partition_Binned_SAH()
+void BVHNode::Partition_Binned_SAH(float parentScore)
 {
 	if (this->primitives.size() < 3) {
 		this->m_Root->m_IsLeaf = true;
@@ -108,7 +108,7 @@ void BVHNode::Partition_Binned_SAH()
 		}
 
 		// Check which axis is the longest.
-		Axis longestAxis;
+		Axis longestAxis{};
 		float xScale = vb.maxBounds.x - vb.minBounds.x;
 		float yScale = vb.maxBounds.y - vb.minBounds.y;
 		float zScale = vb.maxBounds.z - vb.minBounds.z;
@@ -116,11 +116,11 @@ void BVHNode::Partition_Binned_SAH()
 		if ((yScale >= xScale) && (yScale >= zScale)) longestAxis = Y;
 		if ((zScale >= xScale) && (zScale >= yScale)) longestAxis = Z;
 
-		float maxCentroid;
-		float minCentroid;
+		float maxCentroid = INT_MAX;
+		float minCentroid = INT_MIN;
 
 		// Number of bins.
-		constexpr uint K = 8;
+		constexpr uint K = 16;
 		// Bin distance.
 		float k;
 
@@ -204,17 +204,24 @@ void BVHNode::Partition_Binned_SAH()
 		}
 
 		int partitionPlaneID;
-		float lowestCost = INT_MAX;
+		float lowestCost = parentScore;
 
 		// Evaluate which plane is the best split.
 		for (int j = 0; j < number_of_planes; j++)
 		{
 			float cost = trianglesLeft[j] * saBBleft[j] + trianglesRight[j] * saBBright[j];
-			if (cost < lowestCost && cost > 0)
+			if (cost < lowestCost)
 			{
 				lowestCost = cost;
 				partitionPlaneID = j;
 			}
+		}
+
+		if (parentScore == lowestCost)
+		{
+			m_IsLeaf = true;
+
+			return;
 		}
 
 		vector<CoreTri> leftPrimitives;
@@ -233,13 +240,13 @@ void BVHNode::Partition_Binned_SAH()
 		m_Left->m_Root = this;
 		m_Left->primitives = leftPrimitives;
 		m_Left->bounds = CalculateVoxelBounds(leftPrimitives);
-		m_Left->Partition_Binned_SAH();
+		m_Left->Partition_Binned_SAH(lowestCost);
 
 		m_Right = new BVHNode();
 		m_Right->m_Root = this;
 		m_Right->primitives = rightPrimitives;
 		m_Right->bounds = CalculateVoxelBounds(rightPrimitives);
-		m_Right->Partition_Binned_SAH();
+		m_Right->Partition_Binned_SAH(lowestCost);
 	}
 }
 
