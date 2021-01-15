@@ -69,4 +69,13 @@ public:
 
         return numeric_limits<float>::max();
     }
+
+    static float RandomFloat(float s)
+    {
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::mt19937 generator(seed);
+        std::uniform_real_distribution<double> uniform01(-s, s);
+
+        return uniform01(generator);
+    }
 };
