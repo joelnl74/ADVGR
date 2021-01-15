@@ -516,7 +516,7 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 	for (int i = 0; i < number_of_photons; i++)
 	{
 		// TODO: Random direction from point light
-		float randomDirection = 0.5;
+		float3 randomDirection = make_float3(0);
 
 		ray.m_Origin = position;
 		ray.m_Direction = normalize(position - randomDirection);
