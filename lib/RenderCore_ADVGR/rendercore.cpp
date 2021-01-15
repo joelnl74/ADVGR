@@ -526,7 +526,7 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 		float t_min = get<1>(intersect);
 
 		// If a photon missed surface ignore it.
-		if (t_min != numeric_limits<float>::max())
+		if (t_min == numeric_limits<float>::max())
 		{
 			continue;
 		}
