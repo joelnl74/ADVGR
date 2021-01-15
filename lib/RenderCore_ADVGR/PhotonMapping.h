@@ -1,5 +1,4 @@
 #pragma once
-using namespace lighthouse2;
 
 #include <rendersystem.h>
 
@@ -12,7 +11,9 @@ struct Photon
 
 class PhotonMapping
 {
+public:
+	void GeneratePhotons(float3& ligtPosition, int number_of_photons);
 private:
-	int m_Number_Of_Photons;
+	int m_photon_count;
 };
 

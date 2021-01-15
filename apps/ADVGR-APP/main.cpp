@@ -42,17 +42,17 @@ void PrepareScene()
 
 	if (PathTracer)
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/simple_scene_2.obj", 0.1f);
+		sceneMesh = renderer->AddMesh("../_shareddata/CornellBox-Original.obj", 0.1f);
 	}
 	else
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/BunnyScene.obj", 2);
+		sceneMesh = renderer->AddMesh("../_shareddata/CornellBox.obj", 2.5);
 	}
 
 	renderer->AddInstance(sceneMesh);
-	renderer->AddPointLight(make_float3(0, 20, 0), 50 * make_float3(10, 10, 10));
+	renderer->AddPointLight(make_float3(0, 4, -3), 50 * make_float3(0, 20, 0));
 	
-	renderer->GetCamera()->TranslateRelative(make_float3(0, 2.5, -20));
+	renderer->GetCamera()->TranslateRelative(make_float3(0, 2.5, -6));
 	//renderer->GetCamera()->SetMatrix(renderer->GetCamera()->GetMatrix() * mat4::RotateX(0.25));
 	renderer->GetCamera()->Changed();
 
