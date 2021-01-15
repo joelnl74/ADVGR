@@ -23,6 +23,7 @@
 namespace lh2core
 {
 
+static const int photoCount = 10000;
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore                                                                 |
@@ -48,10 +49,11 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	void GeneratePhotons(float3 &position, float3 &intensity, int number_of_photons);
 	float3 Trace(Ray ray, int depth = 0);
 	tuple<CoreTri, float, float3, CoreMaterial> Intersect(Ray ray);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
+	void GeneratePhotons(float3& position, float3& intensity, int number_of_photons);
+	void RenderPhotonMap(const ViewPyramid& view);
 	float3 Reflect(float3& in, float3 normal);
 	float3 Refract(float3& in, float3& normal, float ior);
 	float Fresnel(float3& in, float3& normal, float ior);
@@ -65,7 +67,6 @@ public:
 
 	// internal methods
 private:
-
 	// data members
 	Bitmap* screen = 0;								// temporary storage of RenderCore output; will be copied to render target
 	int targetTextureID = 0;						// ID of the target OpenGL texture
@@ -76,6 +77,7 @@ public:
 	CoreStats coreStats;							// rendering statistics
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
+	Photon photons[photoCount];
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;

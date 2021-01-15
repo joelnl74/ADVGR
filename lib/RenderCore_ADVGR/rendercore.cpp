@@ -105,6 +105,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		}
 	}
 
+	RenderPhotonMap(view);
+
 	for (int i = 0; i < SCRWIDTH * SCRHEIGHT; i++)
 	{
 		float3 p = screenData[i];
@@ -506,7 +508,10 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 		m_coreTriLight.push_back(coreLight);
 	}
 
-	GeneratePhotons(m_pointLights[0].position, m_pointLights[0].radiance, 10000);
+	if (m_pointLights.size() > 0)
+	{
+		GeneratePhotons(m_pointLights[0].position, make_float3(1, 1, 1), photoCount);
+	}
 }
 
 void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, int number_of_photons)
@@ -526,20 +531,37 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 		float t_min = get<1>(intersect);
 
 		// If a photon missed surface ignore it.
-		if (t_min == numeric_limits<float>::max())
+		if (t_min != numeric_limits<float>::max())
 		{
-			continue;
+			// Create Photon
+			Photon photon{};
+			photon.power = intensity; // current power level for the photon
+			photon.L = ray.m_Direction; // incident direction
+			photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+
+			// TODO: Check for hit surface.
+
+			// TODO: Handle as mentioned in the paper		
+
+			photons[i] = photon;
 		}
 
-		// Create Photon
-		Photon photon {};
-		photon.power = intensity; // current power level for the photon
-		photon.L = ray.m_Direction; // incident direction
-		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+	}
+}
 
-		// TODO: Check for hit surface.
+void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
+{
+	for (auto const photon : photons)
+	{
+		if (view.p3.z > 0.0)
+		{
+			float3 position = photon.position;
 
-		// TODO: Handle as mentioned in the paper
+			if(position.x != 0 && position.y != 0)
+			{
+				screenData[(int)position.x + (int)position.y * SCRWIDTH] = make_float3(1);
+			}
+		}
 	}
 }
 
