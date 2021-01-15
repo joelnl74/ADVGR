@@ -511,17 +511,25 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 
 void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, int number_of_photons)
 {
-	Ray ray;
+	Ray photonRay;
 
 	for (int i = 0; i < number_of_photons; i++)
 	{
 		// Random direction from point light
 		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
 
-		ray.m_Origin = position;
-		ray.m_Direction = normalize(position - randomDirection);
+		photonRay.m_Origin = position;
+		photonRay.m_Direction = normalize(position - randomDirection);
 
-		auto intersect = Intersect(ray);
+		auto intersect = Intersect(photonRay);
+
+		float t_min = get<1>(intersect);
+
+		// If a photon missed surface ignore it.
+		if (t_min != numeric_limits<float>::max())
+		{
+			continue;
+		}
 
 		// Create Photon
 		Photon photon {};
