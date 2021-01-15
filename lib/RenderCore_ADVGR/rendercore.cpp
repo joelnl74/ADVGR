@@ -505,7 +505,36 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 
 		m_coreTriLight.push_back(coreLight);
 	}
+
+	GeneratePhotons(m_pointLights[0].position, m_pointLights[0].radiance, 10000);
 }
+
+void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, int number_of_photons)
+{
+	Ray ray;
+
+	for (int i = 0; i < number_of_photons; i++)
+	{
+		// TODO: Random direction from point light
+		float randomDirection = 0.5;
+
+		ray.m_Origin = position;
+		ray.m_Direction = normalize(position - randomDirection);
+
+		auto intersect = Intersect(ray);
+
+		// Create Photon
+		Photon photon {};
+		photon.power = intensity; // current power level for the photon
+		photon.L = ray.m_Direction; // incident direction
+		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+
+		// TODO: Check for hit surface.
+
+		// TODO: Handle as mentioned in the paper
+	}
+}
+
 
 void lh2core::RenderCore::SetSkyData(const float3* pixels, const uint width, const uint height, const mat4& worldToLight)
 {

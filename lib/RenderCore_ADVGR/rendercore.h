@@ -18,6 +18,7 @@
 #include "Sphere.h"
 #include "BVHNode.h"
 #include "Mesh.h"
+#include "Photon.h"
 
 namespace lh2core
 {
@@ -47,6 +48,7 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
+	void GeneratePhotons(float3 &position, float3 &intensity, int number_of_photons);
 	float3 Trace(Ray ray, int depth = 0);
 	tuple<CoreTri, float, float3, CoreMaterial> Intersect(Ray ray);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
