@@ -567,9 +567,9 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
-	for (auto const object : photons)
+	for (auto const &object : photons)
 	{
-		for (auto const photon : object)
+		for (auto const &photon : object)
 		{
 			float3 position = photon.position;
 
