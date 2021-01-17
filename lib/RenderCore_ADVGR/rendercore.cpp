@@ -565,6 +565,33 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 	}
 }
 
+
+float lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal, int index)
+{
+	float3 energy = { 0.0,0.0,0.0 };
+
+	auto &photonsOnObject = photons[index];
+
+	for (int i = 0; i < photonsOnObject.size(); i++) {
+		auto distance = sqrlength(position - photonsOnObject[i].position);
+		auto& photon = photonsOnObject[i];
+
+		// TODO make some constant based on distance.
+		if (distance < 1)
+		{
+			auto weight = max(0.0f, -dot(normal, photon.L));
+			weight *= (1.0 - sqrt(distance));
+
+			//Check if this is correct!!! Add Photon's Energy to Total
+			photon.power += weight;
+			
+			energy = photon.power;
+		}
+
+	}
+	return energy;
+}
+
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
 	for (auto const &object : photons)

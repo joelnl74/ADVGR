@@ -57,6 +57,7 @@ public:
 	float3 Reflect(float3& in, float3 normal);
 	float3 Refract(float3& in, float3& normal, float ior);
 	float Fresnel(float3& in, float3& normal, float ior);
+	float GatherPhotonEnergy(float3& position, float3& normal, int index);
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
