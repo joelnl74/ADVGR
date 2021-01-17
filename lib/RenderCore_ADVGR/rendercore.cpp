@@ -530,7 +530,7 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 
 		float t_min = get<1>(intersect);
 
-		// If a photon missed surface ignore it.
+		// If a photon missed surface ignore it, for now.
 		if (t_min != numeric_limits<float>::max())
 		{
 			// Create Photon
@@ -539,13 +539,23 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 			photon.L = photonRay.m_Direction; // incident direction
 			photon.position = photonRay.m_Origin + photonRay.m_Direction * get<1>(intersect); // world space position of the photon hit
 
-			// TODO: Check for hit surface.
+			// Get material to check for hit surface.
+			auto &material = get<3>(intersect);
 
 			// TODO: Handle as mentioned in the paper		
+			switch (material.pbrtMaterialType)
+			{
+			case::MaterialType::PBRT_MATTE:
+				break;
+			case::MaterialType::PBRT_MIRROR:
+				break;
+			case::MaterialType::PBRT_GLASS:
+				break;
+			}
+
 
 			photons[i] = photon;
 		}
-
 	}
 }
 
@@ -553,14 +563,11 @@ void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
 	for (auto const photon : photons)
 	{
-		if (view.p3.z > 0.0)
-		{
-			float3 position = photon.position;
+		float3 position = photon.position;
 
-			if(position.x != 0 && position.y != 0)
-			{
-				screenData[(int)position.x + (int)position.y * SCRWIDTH] = make_float3(1);
-			}
+		if(position.x != 0 && position.y != 0)
+		{
+			screenData[(int)position.x + (int)position.y * SCRWIDTH] = make_float3(1);
 		}
 	}
 }
