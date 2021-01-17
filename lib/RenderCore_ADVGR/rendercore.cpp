@@ -441,7 +441,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		/*if (i == 0)
 			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;*/
 
-		photons.push_back(std::vector<Photon>());
+		photonsOnObject.push_back(std::vector<Photon>());
 		materials.push_back(mat);
 	}
 }
@@ -560,7 +560,7 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 				break;
 			}
 
-			photons[material.index].push_back(photon);
+			photonsOnObject[material.index].push_back(photon);
 		}
 	}
 }
@@ -570,11 +570,11 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 {
 	float3 energy = { 0.0,0.0,0.0 };
 
-	auto &photonsOnObject = photons[index];
+	auto &photons = photonsOnObject[index];
 
 	for (int i = 0; i < photonsOnObject.size(); i++) {
-		auto distance = sqrlength(position - photonsOnObject[i].position);
-		auto& photon = photonsOnObject[i];
+		auto distance = sqrlength(position - photons[i].position);
+		auto& photon = photons[i];
 
 		// TODO make some constant based on distance.
 		if (distance < 1)
@@ -588,7 +588,6 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 			
 			energy = photon.power;
 		}
-
 	}
 
 	return energy;
@@ -596,9 +595,9 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
-	for (auto const &object : photons)
+	for (auto const &photons : photonsOnObject)
 	{
-		for (auto const &photon : object)
+		for (auto const &photon : photons)
 		{
 			float3 position = photon.position;
 
