@@ -579,10 +579,11 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		// TODO make some constant based on distance.
 		if (distance < 1)
 		{
+			// Contribution based of energy based on distance from point.
 			auto weight = max(0.0f, -dot(normal, photon.L));
 			weight *= (1.0 - sqrt(distance));
 
-			//Check if this is correct!!! Add Photon's Energy to Total
+			//Check if this is correct!!! Add Photon's Energy to Total.
 			photon.power += weight;
 			
 			energy = photon.power;
