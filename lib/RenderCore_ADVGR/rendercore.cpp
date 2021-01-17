@@ -566,7 +566,7 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 }
 
 
-float lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal, int index)
+float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal, int index)
 {
 	float3 energy = { 0.0,0.0,0.0 };
 
@@ -589,6 +589,7 @@ float lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal, 
 		}
 
 	}
+
 	return energy;
 }
 
