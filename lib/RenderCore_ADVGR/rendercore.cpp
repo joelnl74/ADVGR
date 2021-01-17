@@ -524,7 +524,7 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
 
 		photonRay.m_Origin = position;
-		photonRay.m_Direction = normalize(position - randomDirection);
+		photonRay.m_Direction = randomDirection;
 
 		auto intersect = Intersect(photonRay);
 
@@ -536,8 +536,8 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 			// Create Photon
 			Photon photon{};
 			photon.power = intensity; // current power level for the photon
-			photon.L = ray.m_Direction; // incident direction
-			photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+			photon.L = photonRay.m_Direction; // incident direction
+			photon.position = photonRay.m_Origin + photonRay.m_Direction * get<1>(intersect); // world space position of the photon hit
 
 			// TODO: Check for hit surface.
 
