@@ -324,6 +324,8 @@ public:
 	// Vec3Value Kt: absorptions
 	Vec3Value opacity;
 
+	int index;
+
 	// END OF DATA THAT WILL BE COPIED TO COREMATERIAL
 };
 

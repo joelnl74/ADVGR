@@ -77,7 +77,7 @@ public:
 	CoreStats coreStats;							// rendering statistics
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
-	Photon photons[photoCount];
+	vector<vector<Photon>> photons;
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;

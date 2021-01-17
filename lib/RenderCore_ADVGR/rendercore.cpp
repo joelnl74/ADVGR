@@ -407,6 +407,11 @@ float RenderCore::Fresnel(float3& in, float3& normal, float ior)
 
 void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 {
+	if (materials.size() > 0)
+	{
+		return;
+	}
+
 	materials.clear();
 
 	// copy the supplied array of materials
@@ -418,6 +423,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		mat.color.value.y = color.y;
 		mat.color.value.z = color.z;
 
+		mat.index = i;
 		mat.color.textureID = material[i].color.textureID;
 		mat.specular.value = material[i].specular.value;
 
@@ -435,6 +441,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		/*if (i == 0)
 			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;*/
 
+		photons.push_back(std::vector<Photon>());
 		materials.push_back(mat);
 	}
 }
@@ -553,27 +560,30 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 				break;
 			}
 
-			photons[i] = photon;
+			photons[material.index].push_back(photon);
 		}
 	}
 }
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
-	for (auto const photon : photons)
+	for (auto const object : photons)
 	{
-		float3 position = photon.position;
-
-		if(position.x != 0 && position.y != 0)
+		for (auto const photon : object)
 		{
-			// screen width
-			float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
-			// screen height
-			float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
+			float3 position = photon.position;
 
-			if (sy >= 0 && sx >= 0)
+			if (position.x != 0 && position.y != 0)
 			{
-				screenData[(int)(sx + sy)] = make_float3(1);
+				// screen width
+				float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
+				// screen height
+				float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
+
+				if (sy >= 0 && sx >= 0)
+				{
+					// screenData[(int)(sx + sy)] = make_float3(1);
+				}
 			}
 		}
 	}
