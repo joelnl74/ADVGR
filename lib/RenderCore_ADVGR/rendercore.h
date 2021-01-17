@@ -23,7 +23,7 @@
 namespace lh2core
 {
 
-static const int photoCount = 10000;
+static const int photoCount = 100000;
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore                                                                 |

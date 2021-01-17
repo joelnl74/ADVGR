@@ -553,7 +553,6 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 				break;
 			}
 
-
 			photons[i] = photon;
 		}
 	}
@@ -567,7 +566,15 @@ void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 
 		if(position.x != 0 && position.y != 0)
 		{
-			screenData[(int)position.x + (int)position.y * SCRWIDTH] = make_float3(1);
+			// screen width
+			float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
+			// screen height
+			float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
+
+			if (sy >= 0 && sx >= 0)
+			{
+				screenData[(int)(sx + sy)] = make_float3(1);
+			}
 		}
 	}
 }
