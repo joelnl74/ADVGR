@@ -248,7 +248,12 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	{
 		if (isPhoton) {
 			photon.power = color;
-			photonsOnObject[material.index].push_back(photon);
+			if(!caustic)
+				photonsOnObject[material.index].push_back(photon);
+			else {
+				causticsOnObject[material.index].push_back(photon);
+				caustic = false; // Reset value
+			}
 		}
 
 		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
@@ -280,6 +285,9 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		// Calculate chance for reflection and refraction
 		float kr = Fresnel(intersectionPoint, normalVector, ior);
 		if (kr < 1) {
+			if (isPhoton)
+				caustic = true;
+
 			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
 			ray.m_Origin = newOrigin;
 			ray.m_Direction = normalize(m_refractionDirection);
@@ -450,10 +458,11 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 			mat.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
 
-		/*if (i == 0)
-			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;*/
+		if (i == 7)
+			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;
 
 		photonsOnObject.push_back(std::vector<Photon>());
+		causticsOnObject.push_back(std::vector<Photon>());
 		materials.push_back(mat);
 	}
 }
@@ -600,6 +609,27 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
+	for (auto const& photons : causticsOnObject)
+	{
+		for (auto const& photon : photons)
+		{
+			float3 position = photon.position;
+
+			if (position.x != 0 && position.y != 0)
+			{
+				// screen width
+				float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
+				// screen height
+				float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
+
+				if (sy >= 0 && sx >= 0)
+				{
+					//screenData[(int)(sx + sy)] = make_float3(1);
+				}
+			}
+		}
+	}
+
 	for (auto const &photons : photonsOnObject)
 	{
 		for (auto const &photon : photons)

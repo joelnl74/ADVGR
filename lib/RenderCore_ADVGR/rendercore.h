@@ -80,6 +80,8 @@ public:
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 	vector<vector<Photon>> photonsOnObject;
+	vector<vector<Photon>> causticsOnObject;
+	bool caustic = false;
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;
