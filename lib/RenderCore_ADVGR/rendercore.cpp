@@ -255,8 +255,12 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 				caustic = false; // Reset value
 			}
 		}
+		else
+		{
+			return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
+		}
 
-		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
+		return make_float3(0);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -586,7 +590,7 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 
 	auto &photons = photonsOnObject[index];
 
-	for (int i = 0; i < photonsOnObject.size(); i++) {
+	for (int i = 0; i < photons.size(); i++) {
 		auto distance = sqrlength(position - photons[i].position);
 		auto& photon = photons[i];
 
