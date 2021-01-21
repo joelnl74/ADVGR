@@ -98,7 +98,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 				ray.m_Origin = view.pos;
 				ray.m_Direction = direction;
 
-				screenData[x + y * SCRWIDTH] += Trace(ray, 0);
+				screenData[x + y * SCRWIDTH] += Trace(ray, false, 0);
 			}
 
 			screenData[x + y * SCRWIDTH] /= samplingRate + 1;
@@ -174,11 +174,22 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
-float3 RenderCore::Trace(Ray ray, int depth)
+float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 {
 	tuple intersect = Intersect(ray);
-
 	float t_min = get<1>(intersect);
+
+	CoreMaterial material = get<3>(intersect);
+	float3 normalVector = get<2>(intersect);
+	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
+	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
+
+	if (isPhoton && depth == 0) {
+		// Create Photon
+		photon.power = make_float3(1); // current power level for the photon
+		photon.L = ray.m_Direction; // incident direction
+		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+	}
 
 	// If a ray missed a primitive, show a skydome
 	if (t_min == numeric_limits<float>::max())
@@ -192,11 +203,6 @@ float3 RenderCore::Trace(Ray ray, int depth)
 
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
-
-	CoreMaterial material = get<3>(intersect);
-	float3 normalVector = get<2>(intersect);
-	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
-	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
 	// If the material contains a texture, set texture
 	if (material.color.textureID > -1)
@@ -227,8 +233,9 @@ float3 RenderCore::Trace(Ray ray, int depth)
 
 		auto uvColors = texture.idata[pixelIdx];
 
-		float devision = 1.0f / 255;
-		color = make_float3(uvColors.x * devision, uvColors.y * devision, uvColors.z * devision);
+		float division = 1.0f / 255;
+
+		color = make_float3(uvColors.x * division, uvColors.y * division, uvColors.z * division);
 	}
 	
 	// Recursion cap
@@ -239,6 +246,11 @@ float3 RenderCore::Trace(Ray ray, int depth)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
+		if (isPhoton) {
+			photon.power = color;
+			photonsOnObject[material.index].push_back(photon);
+		}
+
 		return CalculateLightContribution(intersectionPoint, normalVector, color, material);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
@@ -248,7 +260,7 @@ float3 RenderCore::Trace(Ray ray, int depth)
 		reflected.m_Direction = Reflect(ray.m_Direction, normalVector);
 
 		float3 m_reflectedColor = color;
-		m_reflectedColor = Trace(reflected, depth + 1);
+		m_reflectedColor = Trace(reflected, isPhoton, depth + 1);
 
 		return m_reflectedColor;
 	}
@@ -271,12 +283,12 @@ float3 RenderCore::Trace(Ray ray, int depth)
 			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
 			ray.m_Origin = newOrigin;
 			ray.m_Direction = normalize(m_refractionDirection);
-			m_refractionColor = Trace(ray, depth + 1);
+			m_refractionColor = Trace(ray, isPhoton, depth + 1);
 		}
 		
 		ray.m_Direction = newOrigin;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
-		m_reflectionColor = Trace(ray, depth + 1);
+		m_reflectionColor = Trace(ray, isPhoton, depth + 1);
 		
 		m_finalColor += m_reflectionColor * kr + m_refractionColor * (1 - kr);
 
@@ -533,38 +545,31 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 		photonRay.m_Origin = position;
 		photonRay.m_Direction = randomDirection;
 
-		auto intersect = Intersect(photonRay);
+		Trace(photonRay, true, 0);
 
-		float t_min = get<1>(intersect);
+		//auto intersect = Intersect(photonRay);
 
-		// If a photon missed surface ignore it, for now.
-		if (t_min != numeric_limits<float>::max())
-		{
-			// Create Photon
-			Photon photon{};
-			photon.power = intensity; // current power level for the photon
-			photon.L = photonRay.m_Direction; // incident direction
-			photon.position = photonRay.m_Origin + photonRay.m_Direction * get<1>(intersect); // world space position of the photon hit
+		//float t_min = get<1>(intersect);
 
-			// Get material to check for hit surface.
-			auto &material = get<3>(intersect);
+		//// If a photon missed surface ignore it, for now.
+		//if (t_min != numeric_limits<float>::max())
+		//{
+		//	// Create Photon
+		//	Photon photon{};
+		//	photon.power = intensity; // current power level for the photon
+		//	photon.L = photonRay.m_Direction; // incident direction
+		//	photon.position = photonRay.m_Origin + photonRay.m_Direction * get<1>(intersect); // world space position of the photon hit
 
-			// TODO: Handle as mentioned in the paper		
-			switch (material.pbrtMaterialType)
-			{
-			case::MaterialType::PBRT_MATTE:
-				break;
-			case::MaterialType::PBRT_MIRROR:
-				break;
-			case::MaterialType::PBRT_GLASS:
-				break;
-			}
+		//	float3 normalVector = get<2>(intersect);
+		//	
+		//	// Get material to check for hit surface.
+		//	auto &material = get<3>(intersect);
+		//	//photon.power = Trace(photonRay, 0, true);
 
-			photonsOnObject[material.index].push_back(photon);
-		}
+		//	photonsOnObject[material.index].push_back(photon);
+		//}
 	}
 }
-
 
 float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal, int index)
 {
@@ -610,7 +615,7 @@ void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 
 				if (sy >= 0 && sx >= 0)
 				{
-					// screenData[(int)(sx + sy)] = make_float3(1);
+					//screenData[(int)(sx + sy)] = make_float3(1);
 				}
 			}
 		}

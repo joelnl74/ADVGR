@@ -49,7 +49,8 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	float3 Trace(Ray ray, int depth = 0);
+	float3 Trace(Ray ray, bool isPhoton, int depth = 0);
+	float3 TracePhoton(Ray photonRay, int depth = 0);
 	tuple<CoreTri, float, float3, CoreMaterial> Intersect(Ray ray);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
 	void GeneratePhotons(float3& position, float3& intensity, int number_of_photons);
@@ -100,6 +101,7 @@ public:
 	vector<Sphere> m_spheres;
 
 	Ray ray;
+	Photon photon;
 	BVHNode* root;
 
 	int maxDepth = 3;
