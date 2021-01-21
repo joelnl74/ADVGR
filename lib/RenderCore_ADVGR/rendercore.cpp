@@ -257,7 +257,8 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		}
 		else
 		{
-			return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
+			return CalculateLightContribution(intersectionPoint, normalVector, color, material);
+			//return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
 		}
 
 		return make_float3(0);
@@ -559,28 +560,6 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 		photonRay.m_Direction = randomDirection;
 
 		Trace(photonRay, true, 0);
-
-		//auto intersect = Intersect(photonRay);
-
-		//float t_min = get<1>(intersect);
-
-		//// If a photon missed surface ignore it, for now.
-		//if (t_min != numeric_limits<float>::max())
-		//{
-		//	// Create Photon
-		//	Photon photon{};
-		//	photon.power = intensity; // current power level for the photon
-		//	photon.L = photonRay.m_Direction; // incident direction
-		//	photon.position = photonRay.m_Origin + photonRay.m_Direction * get<1>(intersect); // world space position of the photon hit
-
-		//	float3 normalVector = get<2>(intersect);
-		//	
-		//	// Get material to check for hit surface.
-		//	auto &material = get<3>(intersect);
-		//	//photon.power = Trace(photonRay, 0, true);
-
-		//	photonsOnObject[material.index].push_back(photon);
-		//}
 	}
 }
 
@@ -608,7 +587,9 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		}
 	}
 
-	return energy;
+	float3 color = materials[index].color.value * energy;
+
+	return color;
 }
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
