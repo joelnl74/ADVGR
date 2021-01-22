@@ -81,7 +81,9 @@ public:
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 	vector<vector<Photon>> photonsOnObject;
 	vector<vector<Photon>> causticsOnObject;
+	vector<vector<Photon>> shadowPhotonsOnObject;
 	bool caustic = false;
+	bool shadowPhoton = false;
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;

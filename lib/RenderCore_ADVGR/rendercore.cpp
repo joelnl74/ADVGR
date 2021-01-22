@@ -184,13 +184,6 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	float3 color = make_float3(material.color.value.x, material.color.value.y, material.color.value.z);
 	float3 intersectionPoint = ray.m_Origin + ray.m_Direction * t_min;
 
-	if (isPhoton && depth == 0) {
-		// Create Photon
-		photon.power = make_float3(1); // current power level for the photon
-		photon.L = ray.m_Direction; // incident direction
-		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
-	}
-
 	// If a ray missed a primitive, show a skydome
 	if (t_min == numeric_limits<float>::max())
 	{
@@ -202,6 +195,21 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		int pixelIdx = yPixel * skyWidth + xPixel;
 
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
+	}
+
+	if (isPhoton && depth == 0 && !shadowPhoton) {
+		// Create Photon
+		photon.power = make_float3(1); // current power level for the photon
+		photon.L = ray.m_Direction; // incident direction
+		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+	}
+
+	if (shadowPhoton && material.pbrtMaterialType == MaterialType::PBRT_MATTE) {
+		// Create Photon
+		photon.power = make_float3(-0.25); // current power level for the photon
+		photon.L = ray.m_Direction; // incident direction
+		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+		shadowPhotonsOnObject[material.index].push_back(photon);
 	}
 
 	// If the material contains a texture, set texture
@@ -248,8 +256,23 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	{
 		if (isPhoton) {
 			photon.power = color;
-			if(!caustic)
-				photonsOnObject[material.index].push_back(photon);
+			if (!caustic) {
+				if (!shadowPhoton)
+					photonsOnObject[material.index].push_back(photon);
+
+				// Save initial state before creating shadow photons
+				float3 ogIntersectionpoint = intersectionPoint;
+				CoreMaterial ogMaterial = material;
+
+				// Start a new ray just slightly beyond the previous intersectionpoint
+				ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
+				shadowPhoton = true;
+				Trace(ray, isPhoton, 0); // We give here a depth of 0 since it is practically a new ray
+				/*intersectionPoint = ogIntersectionpoint;
+				material = ogMaterial;*/
+				shadowPhoton = false;
+				// TODO: Random bounce (Should be done with russian roulette)
+			}
 			else {
 				causticsOnObject[material.index].push_back(photon);
 				caustic = false; // Reset value
@@ -468,6 +491,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 		photonsOnObject.push_back(std::vector<Photon>());
 		causticsOnObject.push_back(std::vector<Photon>());
+		shadowPhotonsOnObject.push_back(std::vector<Photon>());
 		materials.push_back(mat);
 	}
 }
@@ -594,6 +618,27 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
+	for (auto const& photons : shadowPhotonsOnObject)
+	{
+		for (auto const& photon : photons)
+		{
+			float3 position = photon.position;
+
+			if (position.x != 0 && position.y != 0)
+			{
+				// screen width
+				float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
+				// screen height
+				float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
+
+				if (sy >= 0 && sx >= 0)
+				{
+					//screenData[(int)(sx + sy)] = make_float3(1);
+				}
+			}
+		}
+	}
+
 	for (auto const& photons : causticsOnObject)
 	{
 		for (auto const& photon : photons)
