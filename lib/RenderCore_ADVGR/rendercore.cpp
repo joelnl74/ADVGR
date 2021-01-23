@@ -197,7 +197,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
 
-	if (isPhoton && depth == 0 && !shadowPhoton) {
+	if (isPhoton && !shadowPhoton) {
 		// Create Photon
 		photon.power = make_float3(1); // current power level for the photon
 		photon.L = ray.m_Direction; // incident direction
@@ -249,7 +249,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	// Recursion cap
 	if (depth > maxDepth)
 	{
-		return color;
+		return color * (1 / sqrt(depth + 1));
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
@@ -260,16 +260,10 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 				if (!shadowPhoton)
 					photonsOnObject[material.index].push_back(photon);
 
-				// Save initial state before creating shadow photons
-				float3 ogIntersectionpoint = intersectionPoint;
-				CoreMaterial ogMaterial = material;
-
 				// Start a new ray just slightly beyond the previous intersectionpoint
 				ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
 				shadowPhoton = true;
 				Trace(ray, isPhoton, depth); 
-				/*intersectionPoint = ogIntersectionpoint;
-				material = ogMaterial;*/
 				shadowPhoton = false;
 				// TODO: Random bounce (Should be done with russian roulette)
 			}
@@ -277,6 +271,14 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 				causticsOnObject[material.index].push_back(photon);
 				caustic = false; // Reset value
 			}
+
+			// Random photon bounce
+			float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
+
+			ray.m_Origin = intersectionPoint;
+			ray.m_Direction = randomDirection;
+
+			Trace(ray, true, depth + 1);
 		}
 		else
 		{
@@ -486,8 +488,8 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 			mat.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
 
-		/*if (i == 7)
-			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;*/
+		if (i == 7)
+			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;
 
 		photonsOnObject.push_back(std::vector<Photon>());
 		causticsOnObject.push_back(std::vector<Photon>());
