@@ -255,7 +255,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
 		if (isPhoton) {
-			photon.power = color;
+			photon.power = color * (1/sqrt(depth + 1));
 			if (!caustic) {
 				if (!shadowPhoton)
 					photonsOnObject[material.index].push_back(photon);
@@ -267,7 +267,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 				// Start a new ray just slightly beyond the previous intersectionpoint
 				ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
 				shadowPhoton = true;
-				Trace(ray, isPhoton, 0); // We give here a depth of 0 since it is practically a new ray
+				Trace(ray, isPhoton, depth); 
 				/*intersectionPoint = ogIntersectionpoint;
 				material = ogMaterial;*/
 				shadowPhoton = false;
@@ -280,8 +280,8 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		}
 		else
 		{
-			return CalculateLightContribution(intersectionPoint, normalVector, color, material);
-			//return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
+			//return CalculateLightContribution(intersectionPoint, normalVector, color, material);
+			return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
 		}
 
 		return make_float3(0);
@@ -611,9 +611,9 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		}
 	}
 
-	float3 color = materials[index].color.value * energy;
+	// float3 color = materials[index].color.value * energy;
 
-	return color;
+	return energy;
 }
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
