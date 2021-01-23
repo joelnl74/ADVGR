@@ -614,9 +614,29 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		}
 	}
 
-	// float3 color = materials[index].color.value * energy;
+	energy /= numberOfPhotons;
+	
+	int numberOfCaustics = 0;
+	auto& causticPhotons = causticsOnObject[index];
 
-	return energy / numberOfPhotons;
+	for (int i = 0; i < causticPhotons.size(); i++) {
+		auto distance = sqrlength(position - causticPhotons[i].position);
+		auto& photon = causticPhotons[i];
+
+		// TODO make some constant based on distance.
+		if (distance < 1)
+		{
+			// Contribution based of energy based on distance from point.
+			auto weight = max(0.0f, -dot(normal, photon.L));
+			weight *= (1.0 - sqrt(distance));
+
+			//Check if this is correct!!! Add Photon's Energy to Total.
+			energy += photon.power * weight;
+			numberOfCaustics++;
+		}
+	}
+
+	return energy / numberOfCaustics;
 }
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
