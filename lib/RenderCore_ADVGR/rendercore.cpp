@@ -591,6 +591,8 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 {
 	float3 energy = { 0.0,0.0,0.0 };
 
+	int numberOfPhotons = 0;
+
 	auto &photons = photonsOnObject[index];
 
 	for (int i = 0; i < photons.size(); i++) {
@@ -605,13 +607,14 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 			weight *= (1.0 - sqrt(distance));
 
 			//Check if this is correct!!! Add Photon's Energy to Total.
-			energy = photon.power * weight;
+			energy += photon.power * weight;
+			numberOfPhotons++;
 		}
 	}
 
 	// float3 color = materials[index].color.value * energy;
 
-	return energy;
+	return energy / numberOfPhotons;
 }
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
