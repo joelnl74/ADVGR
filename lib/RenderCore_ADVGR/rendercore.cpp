@@ -488,7 +488,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 			mat.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
 
-		if (i == 3)
+		if (i == 3 || i == 6)
 			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;
 
 		photonsOnObject.push_back(std::vector<Photon>());
