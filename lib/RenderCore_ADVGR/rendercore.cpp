@@ -171,6 +171,7 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 			normal = normalize((ray.m_Origin + ray.m_Direction * t_min) - sphere.m_CenterPosition);
 		}
 	}
+
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
@@ -199,7 +200,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 
 	if (isPhoton && !shadowPhoton) {
 		// Create Photon
-		photon.power = make_float3(1); // current power level for the photon
+		photon.power = make_float3(0.5); // current power level for the photon
 		photon.L = ray.m_Direction; // incident direction
 		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
 	}
@@ -602,13 +603,13 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		auto& photon = photons[i];
 
 		// TODO make some constant based on distance.
-		if (distance < 1)
+		if (distance < 0.4)
 		{
 			// Contribution based of energy based on distance from point.
 			auto weight = max(0.0f, -dot(normal, photon.L));
 			weight *= (1.0 - sqrt(distance));
 
-			//Check if this is correct!!! Add Photon's Energy to Total.
+			//Add Photon's Energy to Total.
 			energy += photon.power * weight;
 			numberOfPhotons++;
 		}
@@ -624,7 +625,7 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		auto& photon = causticPhotons[i];
 
 		// TODO make some constant based on distance.
-		if (distance < 1)
+		if (distance < 0.3)
 		{
 			// Contribution based of energy based on distance from point.
 			auto weight = max(0.0f, -dot(normal, photon.L));

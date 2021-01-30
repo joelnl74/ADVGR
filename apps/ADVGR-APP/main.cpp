@@ -50,7 +50,7 @@ void PrepareScene()
 	}
 
 	renderer->AddInstance(sceneMesh);
-	renderer->AddPointLight(make_float3(0, 3, -2.5), 50 * make_float3(0, 20, 0));
+	renderer->AddPointLight(make_float3(0, 3.5, -1), 50 * make_float3(0, 20, 0));
 	
 	renderer->GetCamera()->TranslateRelative(make_float3(0, 2, -7));
 	//renderer->GetCamera()->SetMatrix(renderer->GetCamera()->GetMatrix() * mat4::RotateX(0.25));
