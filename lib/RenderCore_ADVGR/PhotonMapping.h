@@ -10,7 +10,7 @@ public:
 	PhotonMapping() {};
 	void Init(float3& position, float3& intensity, vector<CoreMaterial> &materials, BVHNode *root, vector<Sphere> &spheres);
 	float3 GatherPhotonEnergy(float3& position, float3& normal, int index);
-	float3 PhotonTrace(Ray &ray, int depth, bool isCaustic);
+	void PhotonTrace(Ray &ray, int depth, bool isCaustic);
 
 	void AddCaustic(int index, Photon& photon);
 	void AddPhoton(int index, Photon& photon);
@@ -30,7 +30,7 @@ private:
 	bool caustic = false;
 	bool shadowPhoton = false;
 
-	float causticsCount = 10000000;
+	float causticsCount = 100000;
 	float photonCount = 20000;
 
 	vector<Sphere> m_spheres;
