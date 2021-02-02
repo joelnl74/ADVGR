@@ -108,7 +108,7 @@ public:
 	Photon photon;
 	BVHNode* root;
 
-	int maxDepth = 6;
+	int maxDepth = 3;
 };
 
 } // namespace lh2core

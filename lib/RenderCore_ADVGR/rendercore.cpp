@@ -297,8 +297,8 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		}
 		else
 		{
-			return CalculateLightContribution(intersectionPoint, normalVector, color, material);
-			//return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
+			// return CalculateLightContribution(intersectionPoint, normalVector, color, material);
+			return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
 		}
 
 		return color;
@@ -316,35 +316,33 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
-		// Index of reflection for glass
-		float ior = 1.5;
+    float ior = 1.5;
 
-		float3 m_refractionColor = make_float3(0);
-		float3 m_reflectionColor = make_float3(0);
+        float3 m_refractionColor = make_float3(0);
+        float3 m_reflectionColor = make_float3(0);
 
-		float3 bias = EPSILON * normalVector;
-		bool outside = dot(ray.m_Direction, normalVector) < 0;
-		float3 newOrigin = outside ? intersectionPoint - bias : intersectionPoint + bias;
+        float3 bias = EPSILON * normalVector;
+        bool outside = dot(ray.m_Direction, normalVector) < 0;
 
-		// Calculate chance for reflection and refraction
-		float kr = Fresnel(intersectionPoint, normalVector, ior);
-		if (kr < 1) {
-			if (isPhoton)
-				caustic = true;
+        // Calculate chance for reflection and refraction
+        float kr = Fresnel(intersectionPoint, normalVector, ior);
+        if (kr < 1) {
+            if (isPhoton)
+                caustic = true;
 
-			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
-			ray.m_Origin = newOrigin;
-			ray.m_Direction = normalize(m_refractionDirection);
-			m_refractionColor = Trace(ray, isPhoton, depth + 1);
-		}
-		
-		ray.m_Direction = newOrigin;
-		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
-		m_reflectionColor = Trace(ray, isPhoton, depth + 1);
-		
-		color += m_reflectionColor * kr + m_refractionColor * (1 - kr);
+            float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
+            ray.m_Origin = outside ? intersectionPoint - bias : intersectionPoint + bias;
+            ray.m_Direction = normalize(m_refractionDirection);
+            m_refractionColor = Trace(ray, isPhoton, depth + 1);
+        }
 
-		return color;
+        ray.m_Origin = outside ? intersectionPoint + bias : intersectionPoint - bias;
+        ray.m_Direction = Reflect(ray.m_Direction, normalVector);
+        m_reflectionColor = Trace(ray, isPhoton, depth + 1);
+
+        color += m_reflectionColor * kr + m_refractionColor * (1 - kr);
+
+        return color;
 	}
 
 	return color;
@@ -509,14 +507,13 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		causticsOnObject.push_back(std::vector<Photon>());
 		shadowPhotonsOnObject.push_back(std::vector<Photon>());
 		materials.push_back(mat);
-
-		
 	}
 
 	// Cornells box spheres
 	CoreMaterial mat2{};
 	mat2.color.textureID = -1;
 	mat2.pbrtMaterialType = MaterialType::PBRT_GLASS;
+	mat2.color.value = make_float3(0, 0, 0);
 
 	Sphere glassSphere;
 	glassSphere.m_CenterPosition = make_float3(1.2, 1, -1);
@@ -645,7 +642,7 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		auto& photon = photons[i];
 
 		// TODO make some constant based on distance.
-		if (distance < 0.4)
+		if (distance < 1)
 		{
 			// Contribution based of energy based on distance from point.
 			auto weight = max(0.0f, -dot(normal, photon.L));
@@ -667,7 +664,7 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		auto& photon = causticPhotons[i];
 
 		// TODO make some constant based on distance.
-		if (distance < 0.3)
+		if (distance < 0.1)
 		{
 			// Contribution based of energy based on distance from point.
 			auto weight = max(0.0f, -dot(normal, photon.L));
