@@ -466,20 +466,20 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 	mat2.color.value = make_float3(0, 0, 0);
 
 	Sphere glassSphere;
-	glassSphere.m_CenterPosition = make_float3(1.2, 1, -1);
-	glassSphere.m_Radius = 1;
+	glassSphere.m_CenterPosition = make_float3(2, 1.5, 5);
+	glassSphere.m_Radius = 1.5;
 	glassSphere.m_Material = mat2;
 	m_spheres.push_back(glassSphere);
 
 	photonMapping->AddPhotonVector();
 	photonMapping->AddCausticVector();
 
-	mat2.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+	mat2.pbrtMaterialType = MaterialType::PBRT_GLASS;
 	mat2.index = materialCount + 1;
 
 	Sphere mirrorSphere;
-	mirrorSphere.m_CenterPosition = make_float3(-1, 1, -0.5);
-	mirrorSphere.m_Radius = 1;
+	mirrorSphere.m_CenterPosition = make_float3(-2, 1.5, 7);
+	mirrorSphere.m_Radius = 1.5;
 	mirrorSphere.m_Material = mat2;
 	m_spheres.push_back(mirrorSphere);
 

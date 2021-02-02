@@ -30,8 +30,8 @@ private:
 	bool caustic = false;
 	bool shadowPhoton = false;
 
-	float causticsCount = 100000;
-	float photonCount = 20000;
+	float causticsCount = 1000000;
+	float photonCount = 200000;
 
 	vector<Sphere> m_spheres;
 	vector<CoreMaterial> m_materials;

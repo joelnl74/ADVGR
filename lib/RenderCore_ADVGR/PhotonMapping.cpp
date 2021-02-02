@@ -90,21 +90,25 @@ float3 PhotonMapping::GatherPhotonEnergy(float3& position, float3& normal, int i
 
 	auto& photons = m_PhotonsOnObject[index];
 
-	for (int i = 0; i < photons.size(); i++) {
-		auto distance = sqrlength(position - photons[i].position);
-		auto& photon = photons[i];
-
-		// TODO make some constant based on distance.
-		if (distance < 1)
+	for (int i = 0; i < m_PhotonsOnObject.size(); i++) {
+		for (int j = 0; j < m_PhotonsOnObject[i].size(); j++)
 		{
-			// Contribution based of energy based on distance from point.
-			auto weight = max(0.0f, -dot(normal, photon.L));
-			weight *= (1.0 - sqrt(distance));
+			auto &photon = m_PhotonsOnObject[i][j];
+			auto distance = sqrlength(position - photon.position);
 
-			//Add Photon's Energy to Total.
-			energy += photon.power * weight;
-			numberOfPhotons++;
+			// TODO make some constant based on distance.
+			if (distance < 0.5)
+			{
+				// Contribution based of energy based on distance from point.
+				auto weight = max(0.0f, -dot(normal, photon.L));
+				weight *= (1.0 - sqrt(distance));
+
+				//Add Photon's Energy to Total.
+				energy += photon.power * weight;
+				numberOfPhotons++;
+			}
 		}
+
 	}
 
 	energy /= numberOfPhotons;
@@ -112,20 +116,23 @@ float3 PhotonMapping::GatherPhotonEnergy(float3& position, float3& normal, int i
 	int numberOfCaustics = 0;
 	auto& causticPhotons = m_CausticsOnObject[index];
 
-	for (int i = 0; i < causticPhotons.size(); i++) {
-		auto distance = sqrlength(position - causticPhotons[i].position);
-		auto& photon = causticPhotons[i];
-
-		// TODO make some constant based on distance.
-		if (distance < 1)
+	for (int i = 0; i < m_CausticsOnObject.size(); i++) {
+		for (int j = 0; j < m_CausticsOnObject[i].size(); j++)
 		{
-			// Contribution based of energy based on distance from point.
-			auto weight = max(0.0f, -dot(normal, photon.L));
-			weight *= (1.0 - sqrt(distance));
+			auto& photon = m_CausticsOnObject[i][j];
+			auto distance = sqrlength(position - photon.position);
 
-			//Check if this is correct!!! Add Photon's Energy to Total.
-			energy += photon.power * weight;
-			numberOfCaustics++;
+			// TODO make some constant based on distance.
+			if (distance < 0.5)
+			{
+				// Contribution based of energy based on distance from point.
+				auto weight = max(0.0f, -dot(normal, photon.L));
+				weight *= (1.0 - sqrt(distance));
+
+				//Check if this is correct!!! Add Photon's Energy to Total.
+				energy += photon.power * weight;
+				numberOfCaustics++;
+			}
 		}
 	}
 
@@ -149,18 +156,30 @@ void PhotonMapping::PhotonTrace(Ray& ray, int depth, bool isCaustic)
 		return;
 	}
 
-	if (!shadowPhoton) {
+	photon.L = ray.m_Direction; // incident direction
+	photon.position = intersectionPoint; // world space position of the photon hit
+
+	if (!shadowPhoton && depth == 0) {
 		// Create Photon
-		photon.power = make_float3(0.5); // current power level for the photon
-		photon.L = ray.m_Direction; // incident direction
-		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+		photon.power = make_float3(1); // current power level for the photon
 	}
 
-	if (shadowPhoton && material.pbrtMaterialType == MaterialType::PBRT_MATTE) {
-		// Create Photon
-		photon.power = make_float3(-0.1); // current power level for the photon
-		photon.L = ray.m_Direction; // incident direction
-		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
+	else if (shadowPhoton)
+	{
+		if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
+		{
+			// Create Photon
+			photon.power = make_float3(-0.1); // current power level for the photon
+			AddPhoton(material.index, photon);
+		}
+		else
+		{
+			Ray newRay;
+			newRay.m_Origin = intersectionPoint;
+			newRay.m_Direction = ray.m_Direction;
+			PhotonTrace(newRay, 0, false);
+		}
+
 
 		return;
 	}
@@ -168,35 +187,30 @@ void PhotonMapping::PhotonTrace(Ray& ray, int depth, bool isCaustic)
 	// Recursion cap
 	if (depth > maxDepth)
 	{
-		photon.power = make_float3(1);
-		caustic = false;
-
 		return;
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
 		photon.power = color * (1 / sqrt(depth + 1));
+
 		if (isCaustic && caustic)
 		{
 			AddCaustic(material.index, photon);
 			caustic = false; // Reset value
 		}
 		else {
-			AddPhoton(material.index, photon);
-			// Start a new ray just slightly beyond the previous intersectionpoint
-			ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
-			shadowPhoton = true;
-			PhotonTrace(ray, depth + 1, false);
-			shadowPhoton = false;
 
+			AddPhoton(material.index, photon);
+
+			Ray newRay;
 			// TODO: Random bounce (Should be done with russian roulette)
 			float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
 
-			ray.m_Origin = intersectionPoint;
-			ray.m_Direction = randomDirection;
+			newRay.m_Origin = intersectionPoint;
+			newRay.m_Direction = randomDirection;
 
-			PhotonTrace(ray, depth + 1, false);
+			PhotonTrace(newRay, depth + 1, false);
 		}
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
@@ -212,6 +226,16 @@ void PhotonMapping::PhotonTrace(Ray& ray, int depth, bool isCaustic)
 	{
 		if(isCaustic)
 			caustic = true;
+		else
+		{
+			// Start a new ray just slightly beyond the previous intersectionpoint
+			Ray shadowRay;
+			shadowRay.m_Origin = intersectionPoint;
+			shadowRay.m_Direction = ray.m_Direction;
+			shadowPhoton = true;
+			PhotonTrace(shadowRay, depth + 1, false);
+			shadowPhoton = false;
+		}
 
 		float ior = 1.5;
 
