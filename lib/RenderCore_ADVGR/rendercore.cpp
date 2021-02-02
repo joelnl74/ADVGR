@@ -454,14 +454,13 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 		photonMapping->AddPhotonVector();
 		photonMapping->AddCausticVector();
-		photonMapping->AddShadowPhotonVector();
 
 		materials.push_back(mat);
 	}
 
 	// Cornells box spheres
 	CoreMaterial mat2{};
-	mat2.index = 2;
+	mat2.index = materialCount;
 	mat2.color.textureID = -1;
 	mat2.pbrtMaterialType = MaterialType::PBRT_GLASS;
 	mat2.color.value = make_float3(0, 0, 0);
@@ -474,10 +473,9 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 	photonMapping->AddPhotonVector();
 	photonMapping->AddCausticVector();
-	photonMapping->AddShadowPhotonVector();
 
 	mat2.pbrtMaterialType = MaterialType::PBRT_MIRROR;
-	mat2.index = 3;
+	mat2.index = materialCount + 1;
 
 	Sphere mirrorSphere;
 	mirrorSphere.m_CenterPosition = make_float3(-1, 1, -0.5);
@@ -487,7 +485,6 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 	photonMapping->AddPhotonVector();
 	photonMapping->AddCausticVector();
-	photonMapping->AddShadowPhotonVector();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -561,7 +558,7 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 
 	if (m_pointLights.size() > 0)
 	{
-		photonMapping->Init(m_pointLights[0].position, make_float3(1, 1, 1), photoCount, materials, root, m_spheres);
+		photonMapping->Init(m_pointLights[0].position, make_float3(1, 1, 1), photonCount, materials, root, m_spheres);
 	}
 }
 

@@ -16,7 +16,20 @@ void PhotonMapping::Init(float3& position, float3& intensity, int number_of_phot
 		photonRay.m_Origin = position;
 		photonRay.m_Direction = randomDirection;
 
-		PhotonTrace(photonRay, 0);
+		PhotonTrace(photonRay, 0, false);
+	}
+
+	for (int i = 0; i < (number_of_photons * 3); i++)
+	{
+		// Random direction from point light
+		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
+
+		photonRay.m_Origin = position;
+		photonRay.m_Direction = randomDirection;
+
+		
+		caustic = false;
+		PhotonTrace(photonRay, 0, true);
 	}
 }
 
@@ -120,7 +133,7 @@ float3 PhotonMapping::GatherPhotonEnergy(float3& position, float3& normal, int i
 	return energy / max(1, numberOfCaustics);
 }
 
-float3 PhotonMapping::PhotonTrace(Ray& ray, int depth)
+float3 PhotonMapping::PhotonTrace(Ray& ray, int depth, bool isCaustic)
 {
 	tuple intersect = Intersect(ray);
 	float t_min = get<1>(intersect);
@@ -149,7 +162,6 @@ float3 PhotonMapping::PhotonTrace(Ray& ray, int depth)
 		photon.power = make_float3(-0.25); // current power level for the photon
 		photon.L = ray.m_Direction; // incident direction
 		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
-		AddShadowPhoton(material.index, photon);
 	}
 
 	// Recursion cap
@@ -161,20 +173,20 @@ float3 PhotonMapping::PhotonTrace(Ray& ray, int depth)
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
 		photon.power = color * (1 / sqrt(depth + 1));
-		if (!caustic) {
-			if (!shadowPhoton)
-				AddPhoton(material.index, photon);
-				// Start a new ray just slightly beyond the previous intersectionpoint
-				ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
-				shadowPhoton = true;
-				PhotonTrace(ray, depth + 1);
-				shadowPhoton = false;
-				// TODO: Random bounce (Should be done with russian roulette)
-		}
-		else 
+		if (isCaustic && caustic)
 		{
 			AddCaustic(material.index, photon);
 			caustic = false; // Reset value
+			return color;
+		}
+		else {
+			AddPhoton(material.index, photon);
+			// Start a new ray just slightly beyond the previous intersectionpoint
+			ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
+			shadowPhoton = true;
+			PhotonTrace(ray, depth + 1, false);
+			shadowPhoton = false;
+			// TODO: Random bounce (Should be done with russian roulette)
 		}
 
 		// Random photon bounce
@@ -183,7 +195,7 @@ float3 PhotonMapping::PhotonTrace(Ray& ray, int depth)
 		ray.m_Origin = intersectionPoint;
 		ray.m_Direction = randomDirection;
 
-		PhotonTrace(ray, depth + 1);
+		PhotonTrace(ray, depth + 1, false);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -192,12 +204,15 @@ float3 PhotonMapping::PhotonTrace(Ray& ray, int depth)
 		reflected.m_Direction = Reflect(ray.m_Direction, normalVector);
 
 		float3 m_reflectedColor = color;
-		m_reflectedColor = PhotonTrace(reflected, depth + 1);
+		m_reflectedColor = PhotonTrace(reflected, depth + 1, false);
 
 		return m_reflectedColor;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
+		if(isCaustic)
+			caustic = true;
+
 		float ior = 1.5;
 
 		float3 m_refractionColor = make_float3(0);
@@ -209,17 +224,15 @@ float3 PhotonMapping::PhotonTrace(Ray& ray, int depth)
 		// Calculate chance for reflection and refraction
 		float kr = Fresnel(intersectionPoint, normalVector, ior);
 		if (kr < 1) {
-			caustic = true;
-
 			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
 			ray.m_Origin = outside ? intersectionPoint - bias : intersectionPoint + bias;
 			ray.m_Direction = normalize(m_refractionDirection);
-			m_refractionColor = PhotonTrace(ray, depth + 1);
+			m_refractionColor = PhotonTrace(ray, depth + 1, true);
 		}
 
 		ray.m_Origin = outside ? intersectionPoint + bias : intersectionPoint - bias;
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
-		m_reflectionColor = PhotonTrace(ray, depth + 1);
+		m_reflectionColor = PhotonTrace(ray, depth + 1, false);
 
 		color += m_reflectionColor * kr + m_refractionColor * (1 - kr);
 
@@ -239,11 +252,6 @@ void PhotonMapping::AddPhoton(int index, Photon& photon)
 	m_PhotonsOnObject[index].push_back(photon);
 }
 
-void PhotonMapping::AddShadowPhoton(int index, Photon& photon)
-{
-	m_ShadowPhotonsOnObject[index].push_back(photon);
-}
-
 void PhotonMapping::AddCausticVector()
 {
 	m_CausticsOnObject.push_back(vector<Photon>());
@@ -252,11 +260,6 @@ void PhotonMapping::AddCausticVector()
 void PhotonMapping::AddPhotonVector()
 {
 	m_PhotonsOnObject.push_back(vector<Photon>());
-}
-
-void PhotonMapping::AddShadowPhotonVector()
-{
-	m_ShadowPhotonsOnObject.push_back(vector<Photon>());
 }
 
 float3 PhotonMapping::Reflect(float3& in, float3 normal)
