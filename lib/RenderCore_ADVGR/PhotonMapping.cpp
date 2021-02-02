@@ -26,7 +26,6 @@ void PhotonMapping::Init(float3& position, float3& intensity, int number_of_phot
 
 		photonRay.m_Origin = position;
 		photonRay.m_Direction = randomDirection;
-
 		
 		caustic = false;
 		PhotonTrace(photonRay, 0, true);
@@ -186,16 +185,15 @@ float3 PhotonMapping::PhotonTrace(Ray& ray, int depth, bool isCaustic)
 			shadowPhoton = true;
 			PhotonTrace(ray, depth + 1, false);
 			shadowPhoton = false;
+
 			// TODO: Random bounce (Should be done with russian roulette)
+			float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
+
+			ray.m_Origin = intersectionPoint;
+			ray.m_Direction = randomDirection;
+
+			PhotonTrace(ray, depth + 1, false);
 		}
-
-		// Random photon bounce
-		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
-
-		ray.m_Origin = intersectionPoint;
-		ray.m_Direction = randomDirection;
-
-		PhotonTrace(ray, depth + 1, false);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -227,7 +225,7 @@ float3 PhotonMapping::PhotonTrace(Ray& ray, int depth, bool isCaustic)
 			float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
 			ray.m_Origin = outside ? intersectionPoint - bias : intersectionPoint + bias;
 			ray.m_Direction = normalize(m_refractionDirection);
-			m_refractionColor = PhotonTrace(ray, depth + 1, true);
+			m_refractionColor = PhotonTrace(ray, depth + 1, isCaustic);
 		}
 
 		ray.m_Origin = outside ? intersectionPoint + bias : intersectionPoint - bias;

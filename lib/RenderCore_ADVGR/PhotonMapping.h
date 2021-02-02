@@ -27,8 +27,8 @@ private:
 	float Fresnel(float3& in, float3& normal, float ior);
 
 	int maxDepth = 3;
-	bool caustic;
-	bool shadowPhoton;
+	bool caustic = false;
+	bool shadowPhoton = false;
 
 	vector<Sphere> m_spheres;
 	vector<CoreMaterial> m_materials;
