@@ -14,11 +14,8 @@
 */
 
 #pragma once
-#include "Ray.h"
-#include "Sphere.h"
-#include "BVHNode.h"
 #include "Mesh.h"
-#include "Photon.h"
+#include "PhotonMapping.h"
 
 namespace lh2core
 {
@@ -50,15 +47,11 @@ public:
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
 	float3 Trace(Ray ray, bool isPhoton, int depth = 0);
-	float3 TracePhoton(Ray photonRay, int depth = 0);
 	tuple<CoreTri, float, float3, CoreMaterial> Intersect(Ray ray);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
-	void GeneratePhotons(float3& position, float3& intensity, int number_of_photons);
-	void RenderPhotonMap(const ViewPyramid& view);
 	float3 Reflect(float3& in, float3 normal);
 	float3 Refract(float3& in, float3& normal, float ior);
 	float Fresnel(float3& in, float3& normal, float ior);
-	float3 GatherPhotonEnergy(float3& position, float3& normal, int index);
 
 	// unimplemented for the minimal core
 	inline void SetProbePos( const int2 pos ) override {}
@@ -79,11 +72,6 @@ public:
 	CoreStats coreStats;							// rendering statistics
 	unsigned int screenPixels[SCRWIDTH * SCRHEIGHT];
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
-	vector<vector<Photon>> photonsOnObject;
-	vector<vector<Photon>> causticsOnObject;
-	vector<vector<Photon>> shadowPhotonsOnObject;
-	bool caustic = false;
-	bool shadowPhoton = false;
 
 	vector<float3> skyData;
 	int skyWidth, skyHeight;
@@ -107,6 +95,7 @@ public:
 	Ray ray;
 	Photon photon;
 	BVHNode* root;
+	PhotonMapping *photonMapping;
 
 	int maxDepth = 3;
 };

@@ -14,7 +14,6 @@
 */
 
 #include "core_settings.h"
-#include "Utils.h"
 
 using namespace lh2core;
 
@@ -119,8 +118,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		}
 	}
 
-	RenderPhotonMap(view);
-
 	for (int i = 0; i < SCRWIDTH * SCRHEIGHT; i++)
 	{
 		float3 p = screenData[i];
@@ -212,21 +209,6 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		return skyData[max(0, min(skyHeight * skyWidth, pixelIdx))];
 	}
 
-	if (isPhoton && !shadowPhoton) {
-		// Create Photon
-		photon.power = make_float3(0.5); // current power level for the photon
-		photon.L = ray.m_Direction; // incident direction
-		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
-	}
-
-	if (shadowPhoton && material.pbrtMaterialType == MaterialType::PBRT_MATTE) {
-		// Create Photon
-		photon.power = make_float3(-0.25); // current power level for the photon
-		photon.L = ray.m_Direction; // incident direction
-		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
-		shadowPhotonsOnObject[material.index].push_back(photon);
-	}
-
 	// If the material contains a texture, set texture
 	if (material.color.textureID > -1)
 	{
@@ -269,39 +251,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
 	{
-		if (isPhoton) {
-			photon.power = color * (1/sqrt(depth + 1));
-			if (!caustic) {
-				if (!shadowPhoton)
-					photonsOnObject[material.index].push_back(photon);
-
-				// Start a new ray just slightly beyond the previous intersectionpoint
-				/*ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
-				shadowPhoton = true;
-				Trace(ray, isPhoton, depth + 1); 
-				shadowPhoton = false;*/
-				// TODO: Random bounce (Should be done with russian roulette)
-			}
-			else {
-				causticsOnObject[material.index].push_back(photon);
-				caustic = false; // Reset value
-			}
-
-			// Random photon bounce
-			float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
-
-			ray.m_Origin = intersectionPoint;
-			ray.m_Direction = randomDirection;
-
-			Trace(ray, true, depth + 1);
-		}
-		else
-		{
-			// return CalculateLightContribution(intersectionPoint, normalVector, color, material);
-			return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
-		}
-
-		return color;
+		return photonMapping->GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -326,10 +276,8 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 
         // Calculate chance for reflection and refraction
         float kr = Fresnel(intersectionPoint, normalVector, ior);
-        if (kr < 1) {
-            if (isPhoton)
-                caustic = true;
-
+        if (kr < 1) 
+		{
             float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
             ray.m_Origin = outside ? intersectionPoint - bias : intersectionPoint + bias;
             ray.m_Direction = normalize(m_refractionDirection);
@@ -474,6 +422,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		return;
 	}
 
+	photonMapping = new PhotonMapping();
 	materials.clear();
 
 	// copy the supplied array of materials
@@ -503,14 +452,16 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		/*if (i == 3 || i == 6)
 			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;*/
 
-		photonsOnObject.push_back(std::vector<Photon>());
-		causticsOnObject.push_back(std::vector<Photon>());
-		shadowPhotonsOnObject.push_back(std::vector<Photon>());
+		photonMapping->AddPhotonVector();
+		photonMapping->AddCausticVector();
+		photonMapping->AddShadowPhotonVector();
+
 		materials.push_back(mat);
 	}
 
 	// Cornells box spheres
 	CoreMaterial mat2{};
+	mat2.index = 2;
 	mat2.color.textureID = -1;
 	mat2.pbrtMaterialType = MaterialType::PBRT_GLASS;
 	mat2.color.value = make_float3(0, 0, 0);
@@ -521,11 +472,12 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 	glassSphere.m_Material = mat2;
 	m_spheres.push_back(glassSphere);
 
-	photonsOnObject.push_back(std::vector<Photon>());
-	causticsOnObject.push_back(std::vector<Photon>());
-	shadowPhotonsOnObject.push_back(std::vector<Photon>());
+	photonMapping->AddPhotonVector();
+	photonMapping->AddCausticVector();
+	photonMapping->AddShadowPhotonVector();
 
 	mat2.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+	mat2.index = 3;
 
 	Sphere mirrorSphere;
 	mirrorSphere.m_CenterPosition = make_float3(-1, 1, -0.5);
@@ -533,9 +485,9 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 	mirrorSphere.m_Material = mat2;
 	m_spheres.push_back(mirrorSphere);
 
-	photonsOnObject.push_back(std::vector<Photon>());
-	causticsOnObject.push_back(std::vector<Photon>());
-	shadowPhotonsOnObject.push_back(std::vector<Photon>());
+	photonMapping->AddPhotonVector();
+	photonMapping->AddCausticVector();
+	photonMapping->AddShadowPhotonVector();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -609,139 +561,7 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 
 	if (m_pointLights.size() > 0)
 	{
-		GeneratePhotons(m_pointLights[0].position, make_float3(1, 1, 1), photoCount);
-	}
-}
-
-void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, int number_of_photons)
-{
-	Ray photonRay;
-
-	for (int i = 0; i < number_of_photons; i++)
-	{
-		// Random direction from point light
-		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
-
-		photonRay.m_Origin = position;
-		photonRay.m_Direction = randomDirection;
-
-		Trace(photonRay, true, 0);
-	}
-}
-
-float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal, int index)
-{
-	float3 energy = { 0.0,0.0,0.0 };
-
-	int numberOfPhotons = 0;
-
-	auto &photons = photonsOnObject[index];
-
-	for (int i = 0; i < photons.size(); i++) {
-		auto distance = sqrlength(position - photons[i].position);
-		auto& photon = photons[i];
-
-		// TODO make some constant based on distance.
-		if (distance < 1)
-		{
-			// Contribution based of energy based on distance from point.
-			auto weight = max(0.0f, -dot(normal, photon.L));
-			weight *= (1.0 - sqrt(distance));
-
-			//Add Photon's Energy to Total.
-			energy += photon.power * weight;
-			numberOfPhotons++;
-		}
-	}
-
-	energy /= numberOfPhotons;
-	
-	int numberOfCaustics = 0;
-	auto& causticPhotons = causticsOnObject[index];
-
-	for (int i = 0; i < causticPhotons.size(); i++) {
-		auto distance = sqrlength(position - causticPhotons[i].position);
-		auto& photon = causticPhotons[i];
-
-		// TODO make some constant based on distance.
-		if (distance < 0.1)
-		{
-			// Contribution based of energy based on distance from point.
-			auto weight = max(0.0f, -dot(normal, photon.L));
-			weight *= (1.0 - sqrt(distance));
-
-			//Check if this is correct!!! Add Photon's Energy to Total.
-			energy += photon.power * weight;
-			numberOfCaustics++;
-		}
-	}
-
-	return energy / max(1, numberOfCaustics);
-}
-
-void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
-{
-	for (auto const& photons : shadowPhotonsOnObject)
-	{
-		for (auto const& photon : photons)
-		{
-			float3 position = photon.position;
-
-			if (position.x != 0 && position.y != 0)
-			{
-				// screen width
-				float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
-				// screen height
-				float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
-
-				if (sy >= 0 && sx >= 0)
-				{
-					//screenData[(int)(sx + sy)] = make_float3(1);
-				}
-			}
-		}
-	}
-
-	for (auto const& photons : causticsOnObject)
-	{
-		for (auto const& photon : photons)
-		{
-			float3 position = photon.position;
-
-			if (position.x != 0 && position.y != 0)
-			{
-				// screen width
-				float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
-				// screen height
-				float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
-
-				if (sy >= 0 && sx >= 0)
-				{
-					//screenData[(int)(sx + sy)] = make_float3(1);
-				}
-			}
-		}
-	}
-
-	for (auto const &photons : photonsOnObject)
-	{
-		for (auto const &photon : photons)
-		{
-			float3 position = photon.position;
-
-			if (position.x != 0 && position.y != 0)
-			{
-				// screen width
-				float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
-				// screen height
-				float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
-
-				if (sy >= 0 && sx >= 0)
-				{
-					//screenData[(int)(sx + sy)] = make_float3(1);
-				}
-			}
-		}
+		photonMapping->Init(m_pointLights[0].position, make_float3(1, 1, 1), photoCount, materials, root, m_spheres);
 	}
 }
 

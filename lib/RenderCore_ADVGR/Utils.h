@@ -1,7 +1,6 @@
 #pragma once
 #include "Ray.h"
-#include "core_api_base.h"
-
+#include <random>
 class Utils
 {
 public:
