@@ -20,7 +20,6 @@
 namespace lh2core
 {
 
-static const long photonCount = 200000;
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore                                                                 |

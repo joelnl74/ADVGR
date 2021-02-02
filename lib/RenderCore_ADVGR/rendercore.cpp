@@ -558,7 +558,7 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 
 	if (m_pointLights.size() > 0)
 	{
-		photonMapping->Init(m_pointLights[0].position, make_float3(1, 1, 1), photonCount, materials, root, m_spheres);
+		photonMapping->Init(m_pointLights[0].position, make_float3(1, 1, 1), materials, root, m_spheres);
 	}
 }
 

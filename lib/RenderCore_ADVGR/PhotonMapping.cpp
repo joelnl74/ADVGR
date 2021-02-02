@@ -1,6 +1,6 @@
 #include "PhotonMapping.h"
 
-void PhotonMapping::Init(float3& position, float3& intensity, int number_of_photons, vector<CoreMaterial> &materials, BVHNode* root, vector<Sphere> &spheres)
+void PhotonMapping::Init(float3& position, float3& intensity, vector<CoreMaterial> &materials, BVHNode* root, vector<Sphere> &spheres)
 {
 	bvh = *root;
 	m_materials = materials;
@@ -8,7 +8,7 @@ void PhotonMapping::Init(float3& position, float3& intensity, int number_of_phot
 
 	Ray photonRay;
 
-	for (int i = 0; i < number_of_photons; i++)
+	for (int i = 0; i < photonCount; i++)
 	{
 		// Random direction from point light
 		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
@@ -19,7 +19,7 @@ void PhotonMapping::Init(float3& position, float3& intensity, int number_of_phot
 		PhotonTrace(photonRay, 0, false);
 	}
 
-	for (int i = 0; i < (number_of_photons * 3); i++)
+	for (int i = 0; i < causticsCount; i++)
 	{
 		// Random direction from point light
 		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
