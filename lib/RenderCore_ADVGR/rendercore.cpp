@@ -637,7 +637,7 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		}
 	}
 
-	return energy / numberOfCaustics;
+	return energy / max(1, numberOfCaustics);
 }
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
