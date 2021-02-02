@@ -84,24 +84,38 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	{
 		for (int x = 0; x < SCRWIDTH; x++)
 		{
-			for (int s = 0; s < samplingRate; s++)
-			{
-				// screen width
-				float3 sx = (x + dist(gen)) * dx * (view.p2 - view.p1);
-				// screen height
-				float3 sy = (y + dist(gen)) * dy * (view.p3 - view.p1);
-				// point on the screen
-				float3 point = view.p1 + sx + sy;
-				// direction
-				float3 direction = normalize(point - view.pos);
+			// ANTI-ALIASING
+			//for (int s = 0; s < samplingRate; s++)
+			//{
+			//	// screen width
+			//	float3 sx = (x + dist(gen)) * dx * (view.p2 - view.p1);
+			//	// screen height
+			//	float3 sy = (y + dist(gen)) * dy * (view.p3 - view.p1);
 
-				ray.m_Origin = view.pos;
-				ray.m_Direction = direction;
+			//	// point on the screen
+			//	float3 point = view.p1 + sx + sy;
+			//	// direction
+			//	float3 direction = normalize(point - view.pos);
 
-				screenData[x + y * SCRWIDTH] += Trace(ray, false, 0);
-			}
+			//	ray.m_Origin = view.pos;
+			//	ray.m_Direction = direction;
 
-			screenData[x + y * SCRWIDTH] /= samplingRate + 1;
+			//	screenData[x + y * SCRWIDTH] += Trace(ray, false, 0);
+			//}
+
+			float3 sx = x * dx * (view.p2 - view.p1);
+			float3 sy = y * dy * (view.p3 - view.p1);
+			// point on the screen
+			float3 point = view.p1 + sx + sy;
+			// direction
+			float3 direction = normalize(point - view.pos);
+
+			ray.m_Origin = view.pos;
+			ray.m_Direction = direction;
+
+			screenData[x + y * SCRWIDTH] = Trace(ray, false, 0);
+
+			//screenData[x + y * SCRWIDTH] /= samplingRate + 1;
 		}
 	}
 
@@ -135,7 +149,7 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	vector<BVHNode> nodes = {};
 	root->Intersect(ray, nodes);
 
-	if (nodes.size() == 0)
+	if (nodes.size() == 0 && m_spheres.empty())
 	{
 		return make_tuple(tri, t_min, normal, coreMaterial);
 	}
@@ -250,7 +264,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	// Recursion cap
 	if (depth > maxDepth)
 	{
-		return color * (1 / sqrt(depth + 1));
+		return color;
 	}
 
 	if (material.pbrtMaterialType == MaterialType::PBRT_MATTE)
@@ -262,10 +276,10 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 					photonsOnObject[material.index].push_back(photon);
 
 				// Start a new ray just slightly beyond the previous intersectionpoint
-				ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
+				/*ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
 				shadowPhoton = true;
 				Trace(ray, isPhoton, depth + 1); 
-				shadowPhoton = false;
+				shadowPhoton = false;*/
 				// TODO: Random bounce (Should be done with russian roulette)
 			}
 			else {
@@ -283,11 +297,11 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		}
 		else
 		{
-			//return CalculateLightContribution(intersectionPoint, normalVector, color, material);
-			return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
+			return CalculateLightContribution(intersectionPoint, normalVector, color, material);
+			//return GatherPhotonEnergy(intersectionPoint, normalVector, material.index);
 		}
 
-		return make_float3(0);
+		return color;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
@@ -305,9 +319,8 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		// Index of reflection for glass
 		float ior = 1.5;
 
-		float3 m_refractionColor = color;
-		float3 m_reflectionColor = color;
-		float3 m_finalColor = make_float3(0,0,0);
+		float3 m_refractionColor = make_float3(0);
+		float3 m_reflectionColor = make_float3(0);
 
 		float3 bias = EPSILON * normalVector;
 		bool outside = dot(ray.m_Direction, normalVector) < 0;
@@ -329,9 +342,9 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		ray.m_Direction = Reflect(ray.m_Direction, normalVector);
 		m_reflectionColor = Trace(ray, isPhoton, depth + 1);
 		
-		m_finalColor += m_reflectionColor * kr + m_refractionColor * (1 - kr);
+		color += m_reflectionColor * kr + m_refractionColor * (1 - kr);
 
-		return m_finalColor;
+		return color;
 	}
 
 	return color;
@@ -489,14 +502,43 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 			mat.pbrtMaterialType = MaterialType::PBRT_MIRROR;
 		}
 
-		if (i == 3 || i == 6)
-			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;
+		/*if (i == 3 || i == 6)
+			mat.pbrtMaterialType = MaterialType::PBRT_GLASS;*/
 
 		photonsOnObject.push_back(std::vector<Photon>());
 		causticsOnObject.push_back(std::vector<Photon>());
 		shadowPhotonsOnObject.push_back(std::vector<Photon>());
 		materials.push_back(mat);
+
+		
 	}
+
+	// Cornells box spheres
+	CoreMaterial mat2{};
+	mat2.color.textureID = -1;
+	mat2.pbrtMaterialType = MaterialType::PBRT_GLASS;
+
+	Sphere glassSphere;
+	glassSphere.m_CenterPosition = make_float3(1.2, 1, -1);
+	glassSphere.m_Radius = 1;
+	glassSphere.m_Material = mat2;
+	m_spheres.push_back(glassSphere);
+
+	photonsOnObject.push_back(std::vector<Photon>());
+	causticsOnObject.push_back(std::vector<Photon>());
+	shadowPhotonsOnObject.push_back(std::vector<Photon>());
+
+	mat2.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+
+	Sphere mirrorSphere;
+	mirrorSphere.m_CenterPosition = make_float3(-1, 1, -0.5);
+	mirrorSphere.m_Radius = 1;
+	mirrorSphere.m_Material = mat2;
+	m_spheres.push_back(mirrorSphere);
+
+	photonsOnObject.push_back(std::vector<Photon>());
+	causticsOnObject.push_back(std::vector<Photon>());
+	shadowPhotonsOnObject.push_back(std::vector<Photon>());
 }
 
 //  +-----------------------------------------------------------------------------+
