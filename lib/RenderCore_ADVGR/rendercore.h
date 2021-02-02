@@ -23,7 +23,7 @@
 namespace lh2core
 {
 
-static const long photoCount = 200000;
+static const long photonCount = 200000;
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore                                                                 |
@@ -49,7 +49,7 @@ public:
 
 	// Our methods:
 	void Render(const ViewPyramid& view, const Convergence converge, bool async);
-	float3 Trace(Ray ray, bool isPhoton, int depth = 0);
+	float3 Trace(Ray ray, bool isPhoton, bool isCaustic, int depth = 0);
 	float3 TracePhoton(Ray photonRay, int depth = 0);
 	tuple<CoreTri, float, float3, CoreMaterial> Intersect(Ray ray);
 	float3 CalculateLightContribution(float3& origin, float3& normal, float3 &m_color, CoreMaterial &material);
@@ -81,7 +81,6 @@ public:
 	float3 screenData[SCRWIDTH * SCRHEIGHT];
 	vector<vector<Photon>> photonsOnObject;
 	vector<vector<Photon>> causticsOnObject;
-	vector<vector<Photon>> shadowPhotonsOnObject;
 	bool caustic = false;
 	bool shadowPhoton = false;
 

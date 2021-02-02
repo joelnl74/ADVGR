@@ -189,7 +189,7 @@ tuple<CoreTri, float, float3, CoreMaterial> RenderCore::Intersect(Ray ray)
 	return make_tuple(tri, t_min, normal, coreMaterial);
 }
 
-float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
+float3 RenderCore::Trace(Ray ray, bool isPhoton, bool isCaustic, int depth)
 {
 	tuple intersect = Intersect(ray);
 	float t_min = get<1>(intersect);
@@ -218,13 +218,11 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 		photon.L = ray.m_Direction; // incident direction
 		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
 	}
-
-	if (shadowPhoton && material.pbrtMaterialType == MaterialType::PBRT_MATTE) {
-		// Create Photon
+	else if (shadowPhoton) {
+		// Create shadow photon
 		photon.power = make_float3(-0.25); // current power level for the photon
 		photon.L = ray.m_Direction; // incident direction
 		photon.position = ray.m_Origin + ray.m_Direction * get<1>(intersect); // world space position of the photon hit
-		shadowPhotonsOnObject[material.index].push_back(photon);
 	}
 
 	// If the material contains a texture, set texture
@@ -271,18 +269,18 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	{
 		if (isPhoton) {
 			photon.power = color * (1/sqrt(depth + 1));
-			if (!caustic) {
-				if (!shadowPhoton)
-					photonsOnObject[material.index].push_back(photon);
 
-				// Start a new ray just slightly beyond the previous intersectionpoint
-				/*ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
-				shadowPhoton = true;
-				Trace(ray, isPhoton, depth + 1); 
-				shadowPhoton = false;*/
-				// TODO: Random bounce (Should be done with russian roulette)
-			}
-			else {
+			photonsOnObject[material.index].push_back(photon);
+
+			// Start a new ray just slightly beyond the previous intersectionpoint
+			ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
+			shadowPhoton = true;
+			Trace(ray, isPhoton, isCaustic, depth + 1); 
+			shadowPhoton = false;
+			// TODO: Random bounce (Should be done with russian roulette)
+		
+			if(isCaustic && caustic) // Tracing caustics photons. Whe only want to add 1 at a time and not for every refraction/reflection
+			{
 				causticsOnObject[material.index].push_back(photon);
 				caustic = false; // Reset value
 			}
@@ -293,7 +291,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 			ray.m_Origin = intersectionPoint;
 			ray.m_Direction = randomDirection;
 
-			Trace(ray, true, depth + 1);
+			Trace(ray, true, false, depth + 1);
 		}
 		else
 		{
@@ -305,18 +303,36 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_MIRROR)
 	{
+		if (!isCaustic) {
+			// Start a new ray just slightly beyond the previous intersectionpoint
+			ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
+			shadowPhoton = true;
+			Trace(ray, isPhoton, isCaustic, depth + 1);
+			shadowPhoton = false;
+		}
+
 		Ray reflected;
 		reflected.m_Origin = intersectionPoint;
 		reflected.m_Direction = Reflect(ray.m_Direction, normalVector);
 
 		float3 m_reflectedColor = color;
-		m_reflectedColor = Trace(reflected, isPhoton, depth + 1);
+		m_reflectedColor = Trace(reflected, isPhoton, isCaustic, depth + 1);
 
 		return m_reflectedColor;
 	}
 	else if (material.pbrtMaterialType == MaterialType::PBRT_GLASS)
 	{
-    float ior = 1.5;
+		if (isCaustic)
+			caustic = true;
+		else {
+			// Start a new ray just slightly beyond the previous intersectionpoint
+			ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
+			shadowPhoton = true;
+			Trace(ray, isPhoton, isCaustic, depth + 1);
+			shadowPhoton = false;
+		}
+
+		float ior = 1.5;
 
         float3 m_refractionColor = make_float3(0);
         float3 m_reflectionColor = make_float3(0);
@@ -327,18 +343,15 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
         // Calculate chance for reflection and refraction
         float kr = Fresnel(intersectionPoint, normalVector, ior);
         if (kr < 1) {
-            if (isPhoton)
-                caustic = true;
-
             float3 m_refractionDirection = Refract(ray.m_Direction, normalVector, ior);
             ray.m_Origin = outside ? intersectionPoint - bias : intersectionPoint + bias;
             ray.m_Direction = normalize(m_refractionDirection);
-            m_refractionColor = Trace(ray, isPhoton, depth + 1);
+            m_refractionColor = Trace(ray, isPhoton, isCaustic, depth + 1);
         }
 
         ray.m_Origin = outside ? intersectionPoint + bias : intersectionPoint - bias;
         ray.m_Direction = Reflect(ray.m_Direction, normalVector);
-        m_reflectionColor = Trace(ray, isPhoton, depth + 1);
+        m_reflectionColor = Trace(ray, isPhoton, isCaustic, depth + 1);
 
         color += m_reflectionColor * kr + m_refractionColor * (1 - kr);
 
@@ -505,12 +518,12 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 		photonsOnObject.push_back(std::vector<Photon>());
 		causticsOnObject.push_back(std::vector<Photon>());
-		shadowPhotonsOnObject.push_back(std::vector<Photon>());
 		materials.push_back(mat);
 	}
 
 	// Cornells box spheres
 	CoreMaterial mat2{};
+	mat2.index = materialCount;
 	mat2.color.textureID = -1;
 	mat2.pbrtMaterialType = MaterialType::PBRT_GLASS;
 	mat2.color.value = make_float3(0, 0, 0);
@@ -523,9 +536,9 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 	photonsOnObject.push_back(std::vector<Photon>());
 	causticsOnObject.push_back(std::vector<Photon>());
-	shadowPhotonsOnObject.push_back(std::vector<Photon>());
 
 	mat2.pbrtMaterialType = MaterialType::PBRT_MIRROR;
+	mat2.index = materialCount + 1;
 
 	Sphere mirrorSphere;
 	mirrorSphere.m_CenterPosition = make_float3(-1, 1, -0.5);
@@ -535,7 +548,6 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 
 	photonsOnObject.push_back(std::vector<Photon>());
 	causticsOnObject.push_back(std::vector<Photon>());
-	shadowPhotonsOnObject.push_back(std::vector<Photon>());
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -609,7 +621,7 @@ void RenderCore::SetLights(const CoreLightTri* triLights, const int triLightCoun
 
 	if (m_pointLights.size() > 0)
 	{
-		GeneratePhotons(m_pointLights[0].position, make_float3(1, 1, 1), photoCount);
+		GeneratePhotons(m_pointLights[0].position, make_float3(1, 1, 1), photonCount);
 	}
 }
 
@@ -625,7 +637,18 @@ void lh2core::RenderCore::GeneratePhotons(float3& position, float3 &intensity, i
 		photonRay.m_Origin = position;
 		photonRay.m_Direction = randomDirection;
 
-		Trace(photonRay, true, 0);
+		Trace(photonRay, true, false, 0);
+	}
+
+	for (int i = 0; i < (number_of_photons * 3); i++)
+	{
+		// Random direction from point light
+		float3 randomDirection = make_float3(Utils::RandomFloat(1), Utils::RandomFloat(1), Utils::RandomFloat(1));
+
+		photonRay.m_Origin = position;
+		photonRay.m_Direction = randomDirection;
+
+		Trace(photonRay, true, true, 0);
 	}
 }
 
@@ -642,7 +665,7 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		auto& photon = photons[i];
 
 		// TODO make some constant based on distance.
-		if (distance < 1)
+		if (distance < 0.7)
 		{
 			// Contribution based of energy based on distance from point.
 			auto weight = max(0.0f, -dot(normal, photon.L));
@@ -664,7 +687,7 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 		auto& photon = causticPhotons[i];
 
 		// TODO make some constant based on distance.
-		if (distance < 0.1)
+		if (distance < 1)
 		{
 			// Contribution based of energy based on distance from point.
 			auto weight = max(0.0f, -dot(normal, photon.L));
@@ -681,27 +704,6 @@ float3 lh2core::RenderCore::GatherPhotonEnergy(float3& position, float3& normal,
 
 void lh2core::RenderCore::RenderPhotonMap(const ViewPyramid &view)
 {
-	for (auto const& photons : shadowPhotonsOnObject)
-	{
-		for (auto const& photon : photons)
-		{
-			float3 position = photon.position;
-
-			if (position.x != 0 && position.y != 0)
-			{
-				// screen width
-				float sx = (SCRWIDTH / 2) + (int)(SCRWIDTH * position.x / position.z);
-				// screen height
-				float sy = (SCRHEIGHT / 2) + (int)(SCRHEIGHT * -position.y / position.z);
-
-				if (sy >= 0 && sx >= 0)
-				{
-					//screenData[(int)(sx + sy)] = make_float3(1);
-				}
-			}
-		}
-	}
-
 	for (auto const& photons : causticsOnObject)
 	{
 		for (auto const& photon : photons)
