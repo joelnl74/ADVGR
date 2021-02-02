@@ -46,7 +46,7 @@ void PrepareScene()
 	}
 	else
 	{
-		sceneMesh = renderer->AddMesh("../_shareddata/cornellbox_sphere.obj", 2.5);
+		sceneMesh = renderer->AddMesh("../_shareddata/empty_cornell_box.obj", 2.5);
 	}
 
 	renderer->AddInstance(sceneMesh);
