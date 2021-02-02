@@ -264,7 +264,7 @@ float3 RenderCore::Trace(Ray ray, bool isPhoton, int depth)
 				// Start a new ray just slightly beyond the previous intersectionpoint
 				ray.m_Origin = intersectionPoint + (ray.m_Direction * EPSILON);
 				shadowPhoton = true;
-				Trace(ray, isPhoton, depth); 
+				Trace(ray, isPhoton, depth + 1); 
 				shadowPhoton = false;
 				// TODO: Random bounce (Should be done with russian roulette)
 			}
