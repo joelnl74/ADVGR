@@ -458,7 +458,7 @@ void RenderCore::SetMaterials(CoreMaterial* material, const int materialCount)
 		materials.push_back(mat);
 	}
 
-	// Cornells box spheres
+	// This is normally not needed, its just for our test scene another scene with just triangles will work fine without this code below.
 	CoreMaterial mat2{};
 	mat2.index = materialCount;
 	mat2.color.textureID = -1;
