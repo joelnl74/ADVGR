@@ -200,8 +200,17 @@ void PhotonMapping::PhotonTrace(Ray& ray, int depth, bool isCaustic)
 			caustic = false; // Reset value
 		}
 		else {
-
 			AddPhoton(material.index, photon);
+			
+			if(!caustic)
+			{
+				Ray shadowRay;
+				shadowRay.m_Origin = intersectionPoint;
+				shadowRay.m_Direction = ray.m_Direction;
+				shadowPhoton = true;
+				PhotonTrace(shadowRay, depth + 1, false);
+				shadowPhoton = false;
+			}
 
 			Ray newRay;
 			// TODO: Random bounce (Should be done with russian roulette)
